@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Essensrückmeldung</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="app-container">
+
+        <!-- Main Feedback Screen -->
+        <div id="feedback-section" class="screen active">
+
+            <!-- Sidebar for Grade Buttons -->
+            <div class="feedback-sidebar">
+                 <!-- Order: 9-12 top, 1-4 bottom -->
+                <button class="group-button" data-group="9-12 Klasse">
+                    <img src="9-12_klasse.png" alt="9-12 Klasse">
+                </button>
+                 <button class="group-button" data-group="5-8 Klasse">
+                    <img src="5-8_klasse.png" alt="5-8 Klasse">
+                </button>
+                <button class="group-button" data-group="1-4 Klasse">
+                    <img src="1-4_klasse.png" alt="1-4 Klasse">
+                </button>
+            </div>
+
+            <!-- Main Feedback Input Area -->
+            <div class="feedback-main-content">
+                <!-- Teacher Button (Top Right) -->
+                <button class="group-button teacher-button-feedback" data-group="Lehrer">
+                    Lehrer
+                </button>
+
+                <!-- Heading -->
+                <h2>Meine Rückmeldung zum Essen heute:</h2>
+
+                <!-- Rating Circles -->
+                <div class="feedback-options">
+                    <button class="feedback-button positive" data-rating="1">
+                        <span>mir hat es<br>geschmeckt</span>
+                    </button>
+                    <button class="feedback-button neutral" data-rating="2">
+                        <span>war ok</span>
+                    </button>
+                    <button class="feedback-button negative" data-rating="3">
+                        <span>hat nicht<br>geschmeckt</span>
+                    </button>
+                </div>
+
+                <!-- Comment Section -->
+                <div class="comment-section">
+                     <!-- Updated Placeholder -->
+                    <textarea id="comment" rows="3" placeholder="Kommentar (optional für grün und gelb)"></textarea>
+                     <!-- Error Message Paragraph -->
+                    <p id="comment-error" class="error-message"></p>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loading-indicator" style="display: none;">Sende...</div>
+            </div>
+        </div>
+
+        <!-- Screen 3: Thank You (Simplified Text) -->
+        <div id="thank-you" class="screen">
+             <!-- Simple "DANKE!" Text -->
+             <h2 id="thank-you-text">DANKE!</h2>
+        </div>
+
+    </div>
+
+    <!-- Link to JavaScript file -->
+    <script src="script.js"></script>
+</body>
+</html>

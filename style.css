@@ -1,0 +1,249 @@
+/* Basic Reset & Defaults */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    overflow: hidden; /* Prevent scrollbars if possible */
+}
+
+#app-container {
+    background-color: #fff;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 90vw; /* Use viewport width */
+    max-width: 1000px; /* Adjust max width */
+    height: 80vh; /* Use viewport height */
+    max-height: 600px; /* Adjust max height */
+    display: flex;
+    overflow: hidden; /* Contain content */
+    position: relative; /* Needed for z-index stacking */
+}
+
+/* Screen Management */
+.screen {
+    /* Styles for ALL screens */
+    display: none; /* Hidden by default */
+    position: absolute; /* Position within #app-container */
+    top: 0; left: 0; width: 100%; height: 100%;
+    /* animation: fadeIn 0.5s ease-in-out; */ /* Animation removed */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 1; /* Ensure visible by default */
+    z-index: 1; /* Default stack level */
+    background-color: #fff; /* Ensure background isn't transparent */
+}
+.screen.active {
+    display: flex; /* Show active screen */
+    z-index: 2; /* Bring active screen to front */
+}
+/* @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } */
+
+/* Main Feedback Screen Layout */
+#feedback-section {
+    /* Inherits positioning/size from .screen */
+    flex-direction: row;
+    align-items: stretch;
+}
+
+/* --- Sidebar (20%) --- */
+.feedback-sidebar {
+    flex: 0 0 20%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 10px;
+    gap: 20px;
+    border-right: 1px solid #e0e0e0;
+}
+.feedback-sidebar .group-button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-align: center;
+    border-radius: 20px; /* <<< INCREASED RADIUS */
+    width: 90%;
+    max-width: 150px;
+    transition: transform 0.2s ease, opacity 0.35s ease, filter 0.35s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    overflow: hidden; /* <<< ADDED: Ensure image corners also clip */
+}
+.feedback-sidebar .group-button img {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* border-radius removed */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Main Content Area (80%) --- */
+.feedback-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 30px;
+    position: relative;
+    gap: 25px;
+}
+.teacher-button-feedback {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 12px; /* <<< INCREASED RADIUS */
+    padding: 8px 15px;
+    font-size: 0.9em;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease, opacity 0.35s ease, filter 0.35s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.feedback-main-content h2 {
+    color: #333;
+    font-size: 1.6em;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+/* Rating Circles Container */
+.feedback-options {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 35px;
+    width: 100%;
+    flex-wrap: wrap;
+}
+.feedback-button {
+    border: none;
+    border-radius: 50%;
+    width: 160px;
+    height: 160px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 15px;
+    box-shadow: 0 5px 12px rgba(0,0,0,0.2);
+    color: white;
+    font-weight: bold;
+    font-size: 1.1em;
+    line-height: 1.3;
+}
+.feedback-button span { display: block; }
+.feedback-button:hover:not(:disabled) {
+    transform: scale(1.06);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+}
+.feedback-button.positive { background-color: #28a745; }
+.feedback-button.neutral { background-color: #ffc107; color: white; } /* Text white */
+.feedback-button.negative { background-color: #dc3545; }
+
+/* Comment Section */
+.comment-section {
+    width: 100%;
+    max-width: 530px;
+    margin-top: 10px;
+}
+#comment {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+    min-height: 60px;
+    resize: vertical;
+}
+.error-message {
+    color: #dc3545;
+    font-size: 0.9em;
+    margin-top: 5px;
+    min-height: 1.2em;
+    text-align: left;
+}
+#loading-indicator {
+    font-size: 1.1em;
+    color: #555;
+    position: absolute;
+    bottom: 10px;
+}
+
+/* --- Selection State Styling --- */
+#feedback-section.group-selected .group-button:not(.selected) {
+    opacity: 0.35;
+    filter: grayscale(90%);
+}
+#feedback-section .group-button.selected {
+    opacity: 1;
+    filter: grayscale(0%);
+    transform: scale(1.03);
+    box-shadow: 0 0 14px rgba(0, 100, 255, 0.7);
+}
+#feedback-section .teacher-button-feedback.selected {
+     background-color: #495057;
+}
+
+/* --- Hover effects --- */
+ .feedback-sidebar .group-button:not(.selected):hover {
+    transform: scale(1.05);
+    background-color: rgba(0, 0, 0, 0.03);
+}
+ .teacher-button-feedback:not(.selected):hover {
+    background-color: #5a6268;
+    transform: scale(1.05);
+}
+
+/* --- Screen 3: Thank You --- */
+#thank-you {
+    background-color: #fff;
+}
+#thank-you-text {
+    font-size: 5em;
+    color: #28a745;
+    font-weight: bold;
+    text-align: center;
+    animation: quickPop 0.4s ease-out;
+}
+@keyframes quickPop {
+    0% { transform: scale(0.7); opacity: 0.5; }
+    70% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+    #app-container { width: 95vw; height: 90vh; max-height: none; }
+    #feedback-section { flex-direction: column; }
+    .feedback-sidebar { flex: 0 0 auto; width: 100%; flex-direction: row; justify-content: center; flex-wrap: wrap; padding: 10px; border-right: none; border-bottom: 1px solid #e0e0e0; gap: 10px; }
+    .feedback-sidebar .group-button { width: auto; max-width: 80px; border-radius: 15px; /* Adjust for smaller buttons */ }
+    .feedback-main-content { padding: 15px; gap: 15px; justify-content: flex-start; overflow-y: auto; flex: 1; }
+    .teacher-button-feedback { position: static; align-self: flex-end; margin-bottom: 10px; padding: 6px 10px; font-size: 0.8em; border-radius: 10px; /* Adjust */ }
+    .feedback-main-content h2 { font-size: 1.3em; margin-top: 5px; margin-bottom: 5px; }
+    .feedback-options { gap: 15px; }
+    .feedback-button { width: 100px; height: 100px; font-size: 0.9em; }
+    .comment-section { max-width: 100%; margin-top: 5px; }
+    #thank-you-text { font-size: 4em; }
+}
+@media (max-width: 480px) {
+    .feedback-button { width: 80px; height: 80px; font-size: 0.8em; }
+    .feedback-sidebar .group-button { max-width: 60px; border-radius: 10px; /* Adjust */ }
+    .teacher-button-feedback { border-radius: 8px; /* Adjust */ }
+    #thank-you-text { font-size: 3em; }
+}
