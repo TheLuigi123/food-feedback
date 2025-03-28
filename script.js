@@ -12,18 +12,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---------------------
 
     // --- AUDIO CONFIGURATION ---
-    // Ensure these filenames exactly match your files in the same folder as index.html
     const sounds = {
         '1-4 Klasse': new Audio('1-4_klasse.wav'),
         '5-8 Klasse': new Audio('5-8_klasse.mp3'),
         '9-12 Klasse': new Audio('9-12_klasse.wav'),
-        // 'Lehrer': new Audio('lehrer.mp3'), // Lehrer sound REMOVED as per request (by not playing it)
-        'rating-1': new Audio('green.mp3'),        // Green clicked
-        'rating-2': new Audio('okay.mp3'),         // Yellow/Okay clicked
-        'rating-3-success': new Audio('red.mp3'),  // Red clicked AND VALIDATION PASSED
-        'sent': new Audio('sent.wav'),             // Submission successful (before DANKE)
-        'error': new Audio('error.wav')            // Validation Error
-        // Add 'Besucher': new Audio('soundfile.mp3') here if you want a sound for it
+        'rating-1': new Audio('green.mp3'),
+        'rating-2': new Audio('okay.mp3'),
+        'rating-3-success': new Audio('red.mp3'),
+        'sent': new Audio('sent.wav'),
+        'error': new Audio('error.wav')
     };
     // ---------------------
 
@@ -37,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!feedbackScreen) { console.error("CRITICAL STOP: #feedback-section not found."); return; }
     if (!thankYouScreen) { console.error("CRITICAL STOP: #thank-you not found."); return; }
     console.log("feedbackScreen and thankYouScreen found.");
-    console.log("Selecting ALL group buttons..."); // Updated log message
+    console.log("Selecting ALL group buttons...");
     const allGroupButtons = document.querySelectorAll('#feedback-section .group-button');
     console.log(`allGroupButtons Count: ${allGroupButtons.length}`);
     console.log("Selecting rating buttons...");
@@ -45,17 +42,18 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log(`feedbackRatingButtons Count: ${feedbackRatingButtons.length}`);
     const loadingIndicator = document.getElementById('loading-indicator');
     const commentInput = document.getElementById('comment');
-    const commentError = document.getElementById('comment-error');
-    if (allGroupButtons.length < 5) { console.warn(`Warning: Expected 5 group buttons, found ${allGroupButtons.length}. Check HTML/selectors.`); }
-    if (feedbackRatingButtons.length === 0) { console.error("CRITICAL STOP: 0 rating buttons found."); return; }
-    if (!commentError) { console.warn("Warning: commentError element (#comment-error) not found."); }
+    const commentError = document.getElementById('comment-error'); // The red text paragraph
+    // Enhanced check for the error element
+    if (!commentError) {
+         console.error("CRITICAL WARNING: Element with ID 'comment-error' not found. Error messages will not be displayed in the designated area.");
+    }
     console.log("Essential elements selected.");
 
     // App State
     let selectedGroup = null;
     let selectedRating = null;
     let isSubmitting = false;
-    let lastPlayedRatingSound = null; // <<<--- NEW: Variable to track last rating sound
+    let lastPlayedRatingSound = null;
     console.log("Initial App State set.");
 
     // --- Functions ---
@@ -64,18 +62,26 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Attempt play sound: ${soundKey}`);
         const audio = sounds[soundKey];
         if (audio) {
-            audio.currentTime = 0; // Rewind
+            audio.currentTime = 0;
+            // Stop any other sounds that might be playing (optional, uncomment if needed)
+            /*
+            Object.values(sounds).forEach(snd => {
+                if (snd !== audio && !snd.paused) {
+                    snd.pause();
+                    snd.currentTime = 0;
+                }
+            });
+            */
             audio.play().catch(error => {
                 console.error(`Error playing sound "${soundKey}":`, error);
             });
-            // Return the audio object if it's a rating sound to track it
             if (soundKey.startsWith('rating-')) {
                 return audio;
             }
         } else {
             console.warn(`Sound key "${soundKey}" not found in sounds object.`);
         }
-        return null; // Return null if not found or not a rating sound
+        return null;
     }
 
     function showScreen(screenToShow) {
@@ -108,10 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Starting resetApp...");
         isSubmitting = false;
         commentInput.value = '';
-        if (commentError) commentError.textContent = '';
+        if (commentError) commentError.textContent = ''; // Clear error text
         deselectAllGroups();
         selectedRating = null;
-        lastPlayedRatingSound = null; // <<<--- NEW: Clear tracker on reset
+        lastPlayedRatingSound = null;
 
         showScreen(feedbackScreen);
         console.log("Switched back to feedback screen.");
@@ -166,14 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 console.log('%cSubmit Success! Response Data:', 'color: green; font-weight: bold;', data);
 
-                // <<<--- NEW: Stop previous rating sound BEFORE playing 'sent' ---<<<
+                // Stop previous rating sound BEFORE playing 'sent'
                 if (lastPlayedRatingSound && !lastPlayedRatingSound.paused) {
                     console.log("Stopping previous rating sound before playing 'sent'.");
                     lastPlayedRatingSound.pause();
-                    lastPlayedRatingSound.currentTime = 0; // Reset position
+                    lastPlayedRatingSound.currentTime = 0;
                 }
-                lastPlayedRatingSound = null; // Clear the reference anyway
-                // <<<------------------------------------------------------------<<<
+                lastPlayedRatingSound = null;
 
                 // Play 'sent.wav' sound
                 playSound('sent');
@@ -193,12 +198,19 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch((error) => {
                 console.error('%cError in submitFeedback fetch/then chain:', 'color: red;', error);
-                alert(error.message || 'Ein Fehler ist beim Senden aufgetreten. Bitte versuchen Sie es erneut.');
+                // Display error using the designated paragraph, NOT alert
+                if (commentError) {
+                    commentError.textContent = error.message || 'Ein Fehler ist beim Senden aufgetreten. Bitte versuchen Sie es erneut.';
+                } else {
+                    console.error("Cannot display fetch error message to user: #comment-error element not found.");
+                }
+                // alert(error.message || 'Ein Fehler ist beim Senden aufgetreten. Bitte versuchen Sie es erneut.'); // REMOVED ALERT
+
                 isSubmitting = false;
                 loadingIndicator.style.display = 'none';
                 feedbackRatingButtons.forEach(btn => btn.disabled = false);
                 allGroupButtons.forEach(btn => btn.style.pointerEvents = 'auto');
-                lastPlayedRatingSound = null; // <<<--- NEW: Clear tracker on error too
+                lastPlayedRatingSound = null;
                 console.log("%cSubmit failed. UI reset (including group buttons).", 'color: red;');
             });
     }
@@ -234,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectedGroup = group;
 
                     if (group !== 'Lehrer') {
-                         // We don't need to track group sounds, only rating sounds
                         playSound(group);
                     } else {
                         console.log("Skipped playing sound for 'Lehrer'.");
@@ -273,34 +284,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 const currentRating = ratingValue;
                 const currentComment = commentInput.value.trim();
 
-                if(commentError) commentError.textContent = '';
+                if(commentError) commentError.textContent = ''; // Clear previous errors first
 
                 if (isSubmitting) { console.log("Rating click ignored: isSubmitting."); return; }
-                if (!selectedGroup) {
-                     if(commentError) commentError.textContent = 'Bitte wähle zuerst deine Gruppe (links oder oben rechts)!';
-                     else alert('Bitte wähle zuerst deine Gruppe!');
-                     console.log("Rating click prevented: No group selected.");
-                     return;
-                 }
 
+                // --- MODIFIED Group Selection Check ---
+                if (!selectedGroup) {
+                    console.log("Rating click prevented: No group selected.");
+                    // Display error in the red text paragraph, NOT using alert
+                    if (commentError) {
+                        commentError.textContent = 'Wähle zuerst deine Klasse'; // <-- UPDATED MESSAGE
+                    } else {
+                         // Log error if the paragraph element isn't found, but don't alert
+                        console.error("Cannot display group selection error: #comment-error element not found.");
+                    }
+                    // alert('Bitte wähle zuerst deine Gruppe!'); // <-- REMOVED ALERT
+                    return; // Stop processing
+                 }
+                 // --- End of MODIFIED Check ---
+
+                // --- MODIFIED Comment Validation Check ---
                 if (currentRating === "3" && currentComment.length < commentRequiredLength) {
                     console.warn(`Validation failed: Rating 3, comment length ${currentComment.length}. Required: ${commentRequiredLength}`);
-                    if(commentError) commentError.textContent = `Bei roter Bewertung ist ein Kommentar (mind. ${commentRequiredLength} Zeichen) erforderlich.`;
-                    else alert(`Kommentar (mind. ${commentRequiredLength} Zeichen) für rot nötig.`);
+                    // Display error in the red text paragraph, NOT using alert
+                    if (commentError) {
+                        commentError.textContent = `Bei roter Bewertung ist ein Kommentar (mind. ${commentRequiredLength} Zeichen) erforderlich.`;
+                    } else {
+                        // Log error if the paragraph element isn't found, but don't alert
+                        console.error("Cannot display comment validation error: #comment-error element not found.");
+                    }
+                    // alert(`Kommentar (mind. ${commentRequiredLength} Zeichen) für rot nötig.`); // <-- REMOVED ALERT
                     commentInput.focus();
                     playSound('error');
-                    return;
+                    return; // Stop processing
                 }
+                // --- End of MODIFIED Check ---
 
+                // --- Validation passed (or not required) ---
 
                 // Play sound for the rating CLICK
                 let soundKeyToPlay = `rating-${currentRating}`;
                 if (currentRating === "3") {
                      soundKeyToPlay = 'rating-3-success';
                 }
-                // <<<--- NEW: Store the played sound object ---<<<
                 lastPlayedRatingSound = playSound(soundKeyToPlay);
-                // <<<------------------------------------------<<<
 
                 // Set selected rating state
                 selectedRating = currentRating;
@@ -324,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
      feedbackScreen.classList.add('active');
      loadingIndicator.style.display = 'none';
      allGroupButtons.forEach(btn => btn.style.pointerEvents = 'auto');
-     lastPlayedRatingSound = null; // <<<--- NEW: Ensure cleared on initial load
+     lastPlayedRatingSound = null;
      console.log("--- App Initialized ---");
 
 });
