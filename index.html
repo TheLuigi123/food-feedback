@@ -13,7 +13,7 @@
         <!-- Main Feedback Screen -->
         <div id="feedback-section" class="screen active">
 
-            <!-- Sidebar for Grade Buttons -->
+            <!-- Sidebar for Grade Image Buttons -->
             <div class="feedback-sidebar">
                  <!-- Order: 9-12 top, 1-4 bottom -->
                 <button class="group-button" data-group="9-12 Klasse">
@@ -29,10 +29,16 @@
 
             <!-- Main Feedback Input Area -->
             <div class="feedback-main-content">
-                <!-- Teacher Button (Top Right) -->
-                <button class="group-button teacher-button-feedback" data-group="Lehrer">
-                    Lehrer
-                </button>
+
+                <!-- Container for Top Right Buttons -->
+                <div id="top-right-buttons">
+                    <button class="group-button corner-group-button" data-group="Lehrer">
+                        Lehrer
+                    </button>
+                    <button class="group-button corner-group-button" data-group="Besucher">
+                        Besucher
+                    </button>
+                </div>
 
                 <!-- Heading -->
                 <h2>Meine Rückmeldung zum Essen heute:</h2>
