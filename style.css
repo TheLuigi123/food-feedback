@@ -35,7 +35,6 @@ html, body {
     display: none; /* Hidden by default */
     position: absolute; /* Position within #app-container */
     top: 0; left: 0; width: 100%; height: 100%;
-    /* animation: fadeIn 0.5s ease-in-out; */ /* Animation removed */
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -47,7 +46,6 @@ html, body {
     display: flex; /* Show active screen */
     z-index: 2; /* Bring active screen to front */
 }
-/* @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } */
 
 /* Main Feedback Screen Layout */
 #feedback-section {
@@ -74,17 +72,16 @@ html, body {
     cursor: pointer;
     padding: 0;
     text-align: center;
-    border-radius: 20px; /* <<< INCREASED RADIUS */
+    border-radius: 20px;
     width: 90%;
     max-width: 150px;
     transition: transform 0.2s ease, opacity 0.35s ease, filter 0.35s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-    overflow: hidden; /* <<< ADDED: Ensure image corners also clip */
+    overflow: hidden;
 }
 .feedback-sidebar .group-button img {
     display: block;
     width: 100%;
     height: auto;
-    /* border-radius removed */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
@@ -109,6 +106,7 @@ html, body {
     flex-direction: column; /* Stack buttons vertically */
     gap: 8px; /* Space between Lehrer and Besucher */
     align-items: flex-end; /* Align buttons to the right */
+    z-index: 3; /* Ensure they are above other content if necessary */
 }
 
 /* Shared style for Lehrer and Besucher buttons */
@@ -116,7 +114,7 @@ html, body {
     background-color: #6c757d;
     color: white;
     border: none;
-    border-radius: 12px; /* <<< INCREASED RADIUS */
+    border-radius: 12px;
     padding: 8px 15px;
     font-size: 0.9em;
     cursor: pointer;
@@ -132,7 +130,8 @@ html, body {
     font-size: 1.6em;
     text-align: center;
     margin-bottom: 10px;
-    margin-top: 40px; /* Add some top margin to avoid overlap with corner buttons if needed */
+    margin-top: 5px; /* Adjust if needed based on button placement */
+    width: 100%; /* Ensure heading takes width */
 }
 
 /* Rating Circles Container */
@@ -197,8 +196,9 @@ html, body {
 #loading-indicator {
     font-size: 1.1em;
     color: #555;
-    position: absolute;
-    bottom: 10px;
+    /* position: absolute; */ /* Removed absolute positioning, will flow naturally */
+    /* bottom: 10px; */
+    margin-top: 15px; /* Add some space above */
 }
 
 /* --- Selection State Styling (Applies to ALL .group-button elements) --- */
@@ -221,7 +221,6 @@ html, body {
 /* Specific selected style for sidebar image buttons */
 #feedback-section .feedback-sidebar .group-button.selected {
      box-shadow: 0 0 14px rgba(0, 100, 255, 0.7); /* Blue shadow */
-     /* transform: scale(1.03); already applied */
 }
 
 
@@ -259,17 +258,18 @@ html, body {
     #app-container { width: 95vw; height: 90vh; max-height: none; }
     #feedback-section { flex-direction: column; }
     .feedback-sidebar { flex: 0 0 auto; width: 100%; flex-direction: row; justify-content: center; flex-wrap: wrap; padding: 15px 10px; border-right: none; border-bottom: 1px solid #e0e0e0; gap: 10px; order: 2; /* Move sidebar below main content */ }
-    .feedback-sidebar .group-button { width: auto; max-width: 80px; border-radius: 15px; /* Adjust for smaller buttons */ }
+    .feedback-sidebar .group-button { width: auto; max-width: 80px; border-radius: 15px; }
 
-    .feedback-main-content { padding: 15px; gap: 15px; justify-content: flex-start; overflow-y: auto; flex: 1; order: 1; /* Main content first */ }
+    .feedback-main-content { padding: 15px; gap: 15px; justify-content: flex-start; overflow-y: auto; flex: 1; order: 1; /* Main content first */ position: static; /* Override relative positioning */}
 
     /* Adjust corner buttons container for mobile */
     #top-right-buttons {
         position: static; /* Remove absolute positioning */
+        order: -1; /* Place these buttons at the very top */
         flex-direction: row; /* Side-by-side */
         justify-content: flex-end; /* Align to the right */
         width: 100%; /* Take full width */
-        margin-bottom: 10px; /* Add space below */
+        margin-bottom: 15px; /* Add space below */
         gap: 10px;
     }
      /* Adjust corner buttons themselves */
@@ -277,11 +277,11 @@ html, body {
         width: auto; /* Allow buttons to size based on content */
         padding: 6px 12px;
         font-size: 0.8em;
-        border-radius: 10px; /* Adjust */
+        border-radius: 10px;
     }
 
     .feedback-main-content h2 { font-size: 1.3em; margin-top: 5px; margin-bottom: 5px; }
-    .feedback-options { gap: 15px; }
+    .feedback-options { gap: 15px; margin-top: 15px; }
     .feedback-button { width: 100px; height: 100px; font-size: 0.9em; }
     .comment-section { max-width: 100%; margin-top: 5px; }
     #thank-you-text { font-size: 4em; }
@@ -290,7 +290,8 @@ html, body {
 }
 @media (max-width: 480px) {
     .feedback-button { width: 80px; height: 80px; font-size: 0.8em; }
-    .feedback-sidebar .group-button { max-width: 60px; border-radius: 10px; /* Adjust */ }
-    .corner-group-button { border-radius: 8px; /* Adjust */ padding: 5px 10px; }
+    .feedback-sidebar .group-button { max-width: 60px; border-radius: 10px; }
+    .corner-group-button { border-radius: 8px; padding: 5px 10px; font-size: 0.75em; }
     #thank-you-text { font-size: 3em; }
+    #top-right-buttons { margin-bottom: 10px;}
 }

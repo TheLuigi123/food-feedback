@@ -43,10 +43,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingIndicator = document.getElementById('loading-indicator');
     const commentInput = document.getElementById('comment');
     const commentError = document.getElementById('comment-error'); // The red text paragraph
-    // Enhanced check for the error element
+
+    // --- Enhanced check for the error element ---
     if (!commentError) {
          console.error("CRITICAL WARNING: Element with ID 'comment-error' not found. Error messages will not be displayed in the designated area.");
+    } else {
+        console.log("Element #comment-error found successfully."); // Confirmation
     }
+    // -------------------------------------------
+
     console.log("Essential elements selected.");
 
     // App State
@@ -63,15 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const audio = sounds[soundKey];
         if (audio) {
             audio.currentTime = 0;
-            // Stop any other sounds that might be playing (optional, uncomment if needed)
-            /*
-            Object.values(sounds).forEach(snd => {
-                if (snd !== audio && !snd.paused) {
-                    snd.pause();
-                    snd.currentTime = 0;
-                }
-            });
-            */
             audio.play().catch(error => {
                 console.error(`Error playing sound "${soundKey}":`, error);
             });
@@ -198,13 +194,15 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch((error) => {
                 console.error('%cError in submitFeedback fetch/then chain:', 'color: red;', error);
-                // Display error using the designated paragraph, NOT alert
+                // --- STRICTLY use commentError paragraph for feedback ---
                 if (commentError) {
+                    // Use a generic message for fetch errors, or the specific one if available
                     commentError.textContent = error.message || 'Ein Fehler ist beim Senden aufgetreten. Bitte versuchen Sie es erneut.';
                 } else {
                     console.error("Cannot display fetch error message to user: #comment-error element not found.");
                 }
-                // alert(error.message || 'Ein Fehler ist beim Senden aufgetreten. Bitte versuchen Sie es erneut.'); // REMOVED ALERT
+                // alert(error.message || 'Ein Fehler ist beim Senden aufgetreten. Bitte versuchen Sie es erneut.'); // <-- Double-check: DEFINITELY COMMENTED OUT/REMOVED
+                // ---
 
                 isSubmitting = false;
                 loadingIndicator.style.display = 'none';
@@ -288,39 +286,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isSubmitting) { console.log("Rating click ignored: isSubmitting."); return; }
 
-                // --- MODIFIED Group Selection Check ---
+                // --- Group Selection Check (Strictly NO alert) ---
                 if (!selectedGroup) {
                     console.log("Rating click prevented: No group selected.");
-                    // Display error in the red text paragraph, NOT using alert
                     if (commentError) {
                         commentError.textContent = 'Wähle zuerst deine Klasse'; // <-- UPDATED MESSAGE
                     } else {
-                         // Log error if the paragraph element isn't found, but don't alert
                         console.error("Cannot display group selection error: #comment-error element not found.");
                     }
-                    // alert('Bitte wähle zuerst deine Gruppe!'); // <-- REMOVED ALERT
+                    // alert('Bitte wähle zuerst deine Gruppe!'); // <-- DEFINITELY REMOVED
                     return; // Stop processing
                  }
-                 // --- End of MODIFIED Check ---
+                 // ---
 
-                // --- MODIFIED Comment Validation Check ---
+                // --- Comment Validation Check (Strictly NO alert) ---
                 if (currentRating === "3" && currentComment.length < commentRequiredLength) {
                     console.warn(`Validation failed: Rating 3, comment length ${currentComment.length}. Required: ${commentRequiredLength}`);
-                    // Display error in the red text paragraph, NOT using alert
                     if (commentError) {
                         commentError.textContent = `Bei roter Bewertung ist ein Kommentar (mind. ${commentRequiredLength} Zeichen) erforderlich.`;
                     } else {
-                        // Log error if the paragraph element isn't found, but don't alert
                         console.error("Cannot display comment validation error: #comment-error element not found.");
                     }
-                    // alert(`Kommentar (mind. ${commentRequiredLength} Zeichen) für rot nötig.`); // <-- REMOVED ALERT
+                    // alert(`Kommentar (mind. ${commentRequiredLength} Zeichen) für rot nötig.`); // <-- DEFINITELY REMOVED
                     commentInput.focus();
                     playSound('error');
                     return; // Stop processing
                 }
-                // --- End of MODIFIED Check ---
-
-                // --- Validation passed (or not required) ---
+                // ---
 
                 // Play sound for the rating CLICK
                 let soundKeyToPlay = `rating-${currentRating}`;
