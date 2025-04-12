@@ -662,7 +662,7 @@
                          if (currentComment.length > maxCommentLength) {
                              console.warn(`Comment truncated to ${maxCommentLength} chars.`);
                              commentInput.value = currentComment.substring(0, maxCommentLength);
-                             if (commentError.textContent !== limitExceededMsg && !commentError.textContent.includes('Rote Bewertung braucht')) {
+                             if (commentError.textContent !== limitExceededMsg && !commentError.textContent.includes('Was hat nicht geschmeckt? Bitte sprich einige Worte.')) {
                                 commentError.textContent = limitExceededMsg;
                              }
                          } else {
@@ -771,7 +771,7 @@
                         const ratingErrorMsg = 'Bitte eine Bewertung auswählen.';
                         const micErrorMsg = 'Bitte warten bis die Spracheingabe fertig ist.';
                         const lengthErrorMsg = `Max. ${maxCommentLength} Zeichen erlaubt.`;
-                        const requiredErrorMsg = `Rote Bewertung braucht Kommentar (min. ${commentRequiredLength} Zeichen).`;
+                        const requiredErrorMsg = `Was hat nicht geschmeckt? Bitte sprich einige Worte.`;
 
                         if (!selectedGroup) { console.warn("Submit stopped: Group missing."); if(commentError) commentError.textContent = groupErrorMsg; playSound('error'); return; }
                         if (!selectedRating) { console.warn("Submit stopped: Rating missing."); if(commentError) commentError.textContent = ratingErrorMsg; playSound('error'); return; }
@@ -926,7 +926,7 @@
                                     const currentComment = commentInput ? commentInput.value.trim() : '';
 
                                     if (selectedRating === "3" && currentComment.length < commentRequiredLength) {
-                                         if (commentError) commentError.textContent = `Rote Bewertung braucht Kommentar (min. ${commentRequiredLength} Zeichen).`;
+                                         if (commentError) commentError.textContent = `Was hat nicht geschmeckt? Bitte sprich einige Worte.`;
                                          if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; }
                                          lastPlayedRatingSound = playSound('rating-3-success');
                                          playSound('error');
@@ -974,7 +974,7 @@
                                 console.log("Kommentar löschen clicked");
                                 if (commentInput) commentInput.value = '';
 
-                                if(commentError && (commentError.textContent.includes(maxCommentLength) || commentError.textContent.includes('Rote Bewertung braucht'))) {
+                                if(commentError && (commentError.textContent.includes(maxCommentLength) || commentError.textContent.includes('Was hat nicht geschmeckt? Bitte sprich einige Worte.'))) {
                                     commentError.textContent = '';
                                 }
                                 updateClearButtonVisibility(); // Hide button after clearing
@@ -986,7 +986,7 @@
                          if (commentInput) {
                             commentInput.addEventListener('input', () => {
                                 enforceCommentLimit(); // Handles max length and clear button visibility
-                                if (selectedRating === "3" && commentError?.textContent.includes("Rote Bewertung braucht")) {
+                                if (selectedRating === "3" && commentError?.textContent.includes("Was hat nicht geschmeckt? Bitte sprich einige Worte.")) {
                                     if (commentInput.value.trim().length >= commentRequiredLength) {
                                         if (!commentError.textContent.includes(maxCommentLength)) {
                                              commentError.textContent = '';
