@@ -419,7 +419,6 @@
                     const googleAppsScriptUrl = 'https://script.google.com/macros/s/AKfycbw_PX8InYEZm1tc6uVLYYZpBSTYjVB4fXXHCj62nLsZr7n6N2nspr3wXLjoP68GgIdIsw/exec';
                     const thankYouDuration = 1200;
                     const commentRequiredLength = 15;
-                    // --- REMOVED AssemblyAI Key ---
                     // ---------------------
 
                     // --- AUDIO CONFIGURATION ---
@@ -457,27 +456,29 @@
                     console.log(`Elements found: ${allGroupButtons.length} groups, ${feedbackRatingButtons.length} ratings.`);
                     console.log("Essential elements selection successful.");
 
-                    // App State
+                    // --- App State ---
                     let selectedGroup = null, selectedRating = null, isSubmitting = false, lastPlayedRatingSound = null;
                     let isMicRecording = false; // State for Web Speech API active
+                    let recognition;
+                    let speechApiSupported = false;
+                    let lastFinalTranscript = ''; // <<< Variable to track last appended transcript
 
                     // --- Web Speech API Setup ---
                     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                    let recognition;
-                    let speechApiSupported = false;
 
                     if (SpeechRecognition) {
                         console.log("Web Speech API is supported!");
                         speechApiSupported = true;
                         recognition = new SpeechRecognition();
                         recognition.continuous = true; // Keep listening until stopped
-                        recognition.interimResults = true; // Get results while speaking
+                        recognition.interimResults = true; // Get results while speaking (still useful for desktop/debugging)
                         recognition.lang = 'de-DE'; // Set language to German
 
                         // --- Speech Recognition Event Handlers ---
                         recognition.onstart = () => {
                             console.log("Speech recognition started.");
                             isMicRecording = true;
+                            lastFinalTranscript = ''; // <<< RESET last transcript on new recording start
                             if (recordButton) {
                                 recordButton.classList.add('is-recording');
                                 recordButton.disabled = false; // Ensure it's clickable to stop
@@ -493,33 +494,70 @@
                             if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = true);
                         };
 
+                        // --- MODIFIED onresult with DEBUG LOGS and DUPLICATE CHECK ---
                         recognition.onresult = (event) => {
+                            console.log("--- onresult event ---", new Date().toLocaleTimeString()); // Log event time
+                            console.log("Result index:", event.resultIndex);
+                            console.log("Results length:", event.results.length);
+
                             let interimTranscript = '';
                             let finalTranscript = '';
 
                             for (let i = event.resultIndex; i < event.results.length; ++i) {
                                 const transcript = event.results[i][0].transcript;
-                                if (event.results[i].isFinal) {
+                                const confidence = event.results[i][0].confidence;
+                                const isFinal = event.results[i].isFinal;
+
+                                // Log details for EACH result in this event
+                                console.log(`  Result ${i}: Final=${isFinal}, Conf=${confidence ? confidence.toFixed(3) : 'N/A'}, Text='${transcript}'`);
+
+                                if (isFinal) {
                                     finalTranscript += transcript;
                                 } else {
                                     interimTranscript += transcript;
                                 }
                             }
+                            console.log("Raw Final Transcript collected for this event:", finalTranscript);
+                            console.log("Raw Interim Transcript collected for this event:", interimTranscript);
 
-                            // Append final results to the textarea
+
+                            // --- Refined Appending Logic ---
                             if (finalTranscript && commentInput) {
-                                console.log("Final transcript:", finalTranscript);
-                                // Add a space if the textarea isn't empty and doesn't end with space
-                                const needsSpace = commentInput.value.length > 0 && !commentInput.value.endsWith(' ');
-                                commentInput.value += (needsSpace ? ' ' : '') + finalTranscript.trim() + ' ';
-                                commentInput.scrollTop = commentInput.scrollHeight; // Scroll to bottom
+                                const currentFinalText = finalTranscript.trim();
+                                // More robust check: Don't append if the current final text is the same as the last one processed OR empty
+                                if (currentFinalText.length > 0 && currentFinalText !== lastFinalTranscript) {
+                                    console.log("%cAppending final transcript:", "color: green; font-weight: bold;", currentFinalText); // Style log
+                                    const needsSpace = commentInput.value.length > 0 && !commentInput.value.endsWith(' ');
+                                    commentInput.value += (needsSpace ? ' ' : '') + currentFinalText + ' ';
+                                    commentInput.scrollTop = commentInput.scrollHeight;
+                                    lastFinalTranscript = currentFinalText; // Store the successfully appended text
+                                } else if (currentFinalText.length > 0) {
+                                    console.warn("%cSkipping duplicate or empty final transcript:", "color: orange;", currentFinalText); // Style log
+                                }
+                            }
+                            // --- End Refined Appending Logic ---
+
+
+                            // Update status display (optional: show interim even if not appending final)
+                            if(commentError) {
+                                if (interimTranscript) {
+                                    commentError.textContent = 'Höre zu... ' + interimTranscript;
+                                } else if (isMicRecording && !finalTranscript) {
+                                    // Keep showing "Höre zu..." if still recording but no interim/final this time
+                                    commentError.textContent = 'Höre zu...';
+                                }
+                                // The onend handler should clear the "Höre zu..." message if it wasn't an error
                             }
 
-                            // Optional: Show interim results in the error area or title for feedback
-                            if(commentError) commentError.textContent = 'Höre zu... ' + interimTranscript;
-                            if(recordButton) recordButton.title = "Aufnahme stoppen (Interim: " + interimTranscript + ")";
+                            // Update button title with interim text (optional)
+                            if(recordButton && interimTranscript) {
+                                recordButton.title = "Aufnahme stoppen (Interim: " + interimTranscript + ")";
+                            } else if (recordButton && isMicRecording) {
+                                recordButton.title = "Aufnahme stoppen";
+                            }
 
-                        };
+                        }; // --- End of MODIFIED onresult function ---
+
 
                         recognition.onerror = (event) => {
                             console.error('Speech recognition error:', event.error, event.message);
@@ -532,7 +570,7 @@
                                 case 'aborted': errorMessage = 'Aufnahme abgebrochen.'; break; // Often happens on stop()
                                 default: errorMessage = `Fehler: ${event.error}`;
                             }
-                             if (event.error !== 'aborted') { // Don't show error just for stopping
+                            if (event.error !== 'aborted') { // Don't show error just for stopping
                                 if(commentError) commentError.textContent = errorMessage;
                                 playSound('error');
                             }
@@ -549,12 +587,12 @@
                                 if (recordingIcon) recordingIcon.style.display = 'none';
                             }
                             // Re-enable other inputs ONLY IF error wasn't 'not-allowed'
-                             if (event.error !== 'not-allowed') {
+                            if (event.error !== 'not-allowed') {
                                 if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false);
                                 if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
                             } else {
-                                 // Keep mic button disabled if permission denied
-                                 if (recordButton) recordButton.disabled = true;
+                                // Keep mic button disabled if permission denied
+                                if (recordButton) recordButton.disabled = true;
                             }
                         };
 
@@ -570,7 +608,7 @@
                                 if (defaultIcon) defaultIcon.style.display = 'inline';
                                 if (recordingIcon) recordingIcon.style.display = 'none';
                             }
-                             // Clear listening status if no error occurred before end
+                            // Clear listening status if no error occurred before end
                             if (commentError && commentError.textContent.startsWith('Höre zu...')) {
                                 commentError.textContent = '';
                             }
@@ -586,136 +624,150 @@
                             recordButton.disabled = true;
                             recordButton.title = "Spracherkennung nicht unterstützt";
                         }
-                         // Optionally inform user more prominently
+                        // Optionally inform user more prominently
                         // if(commentError) commentError.textContent = "Spracherkennung wird nicht unterstützt.";
                     }
                     // --- End Web Speech API Setup ---
 
                     // --- Functions Definitions ---
                     function playSound(soundKey) {
-                         console.log(`Attempting to play sound: ${soundKey}`);
-                         if (sounds[soundKey]) {
-                             try {
-                                 if (lastPlayedRatingSound && soundKey.startsWith('rating-')) {
-                                     lastPlayedRatingSound.pause();
-                                     lastPlayedRatingSound.currentTime = 0;
-                                 }
-                                 sounds[soundKey].currentTime = 0;
-                                 const playPromise = sounds[soundKey].play();
-                                 if (playPromise !== undefined) {
-                                     playPromise.then(_ => {
-                                         console.log(`Sound '${soundKey}' played successfully.`);
-                                         if (soundKey.startsWith('rating-')) { lastPlayedRatingSound = sounds[soundKey]; }
-                                     }).catch(error => console.error(`Audio Playback Error for '${soundKey}':`, error));
-                                 }
-                                 return sounds[soundKey];
-                             } catch (e) { console.error(`Error playing sound '${soundKey}':`, e); }
-                         } else { console.warn(`Sound key '${soundKey}' not found.`); }
-                         return null;
-                     }
+                        console.log(`Attempting to play sound: ${soundKey}`);
+                        if (sounds[soundKey]) {
+                            try {
+                                if (lastPlayedRatingSound && soundKey.startsWith('rating-')) {
+                                    lastPlayedRatingSound.pause();
+                                    lastPlayedRatingSound.currentTime = 0;
+                                }
+                                sounds[soundKey].currentTime = 0;
+                                const playPromise = sounds[soundKey].play();
+                                if (playPromise !== undefined) {
+                                    playPromise.then(_ => {
+                                        console.log(`Sound '${soundKey}' played successfully.`);
+                                        if (soundKey.startsWith('rating-')) { lastPlayedRatingSound = sounds[soundKey]; }
+                                    }).catch(error => console.error(`Audio Playback Error for '${soundKey}':`, error));
+                                }
+                                return sounds[soundKey];
+                            } catch (e) { console.error(`Error playing sound '${soundKey}':`, e); }
+                        } else { console.warn(`Sound key '${soundKey}' not found.`); }
+                        return null;
+                    }
 
                     function showScreen(screenToShow){
-                         console.log(`Showing screen: ${screenToShow.id}`);
-                         document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-                         screenToShow.classList.add('active');
-                     }
+                        console.log(`Showing screen: ${screenToShow.id}`);
+                        document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+                        screenToShow.classList.add('active');
+                    }
 
                     function formatTimestamp(date){
-                         const pad = (num) => num.toString().padStart(2, '0');
-                         return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-                     }
+                        const pad = (num) => num.toString().padStart(2, '0');
+                        return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+                    }
 
                     function deselectAllGroups(){
-                         console.log("Deselecting all groups.");
-                         selectedGroup = null;
-                         if (feedbackScreen) feedbackScreen.classList.remove('group-selected');
-                         if (allGroupButtons) allGroupButtons.forEach(btn => btn.classList.remove('selected'));
-                         console.log(`Selected group after deselect: ${selectedGroup}`);
-                     }
+                        console.log("Deselecting all groups.");
+                        selectedGroup = null;
+                        if (feedbackScreen) feedbackScreen.classList.remove('group-selected');
+                        if (allGroupButtons) allGroupButtons.forEach(btn => btn.classList.remove('selected'));
+                        console.log(`Selected group after deselect: ${selectedGroup}`);
+                    }
 
                     function resetApp() {
-                         console.log("--- Resetting App ---");
-                         // Stop speech recognition if it's running
-                         if (isMicRecording && recognition) {
-                              console.log("Stopping speech recognition during reset.");
-                              recognition.stop(); // This will trigger onend/onerror
-                         }
-                         isSubmitting = false;
-                         selectedRating = null;
-                         deselectAllGroups();
-                         if (commentInput) commentInput.value = '';
-                         if (commentError) commentError.textContent = '';
-                         if (loadingIndicator) loadingIndicator.style.display = 'none';
-                         if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false);
-                         if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
-                         if (feedbackScreen && thankYouScreen) showScreen(feedbackScreen);
+                        console.log("--- Resetting App ---");
+                        // Stop speech recognition if it's running
+                        if (isMicRecording && recognition) {
+                            console.log("Stopping speech recognition during reset.");
+                             try { recognition.stop(); } catch (e) { console.warn("Error stopping recognition during reset:", e); }
+                        }
+                        isSubmitting = false;
+                        selectedRating = null;
+                        deselectAllGroups();
+                        if (commentInput) commentInput.value = '';
+                        if (commentError) commentError.textContent = '';
+                        if (loadingIndicator) loadingIndicator.style.display = 'none';
+                        if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false);
+                        if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
+                        if (feedbackScreen && thankYouScreen) showScreen(feedbackScreen);
 
-                         // Reset Mic button state specifically
-                         isMicRecording = false; // Ensure state is reset
-                         if (recordButton) {
-                              recordButton.classList.remove('is-recording'); // Ensure class is removed
-                              recordButton.disabled = !speechApiSupported; // Reset disabled based on support
-                              recordButton.title = speechApiSupported ? "Kommentar diktieren" : "Spracherkennung nicht unterstützt";
-                              const defaultIcon = recordButton.querySelector('.mic-icon.default');
-                              const recordingIcon = recordButton.querySelector('.mic-icon.recording');
-                              if (defaultIcon) defaultIcon.style.display = 'inline';
-                              if (recordingIcon) recordingIcon.style.display = 'none';
-                         }
+                        // Reset Mic button state specifically
+                        isMicRecording = false; // Ensure state is reset
+                        lastFinalTranscript = ''; // Reset transcript tracker
+                        if (recordButton) {
+                            recordButton.classList.remove('is-recording'); // Ensure class is removed
+                            recordButton.disabled = !speechApiSupported; // Reset disabled based on support
+                            recordButton.title = speechApiSupported ? "Kommentar diktieren" : "Spracherkennung nicht unterstützt";
+                            const defaultIcon = recordButton.querySelector('.mic-icon.default');
+                            const recordingIcon = recordButton.querySelector('.mic-icon.recording');
+                            if (defaultIcon) defaultIcon.style.display = 'inline';
+                            if (recordingIcon) recordingIcon.style.display = 'none';
+                        }
 
-                         lastPlayedRatingSound = null;
-                         console.log("--- App Reset Complete ---");
-                     }
+                        lastPlayedRatingSound = null;
+                        console.log("--- App Reset Complete ---");
+                    }
 
                     async function submitFeedback() {
-                         console.log("%c--- SUBMITTING FEEDBACK ---", "color: blue; font-weight: bold;");
-                         console.log(`Group: ${selectedGroup}, Rating: ${selectedRating}, Comment: '${commentInput ? commentInput.value.trim() : 'N/A'}'`);
+                        console.log("%c--- SUBMITTING FEEDBACK ---", "color: blue; font-weight: bold;");
+                        console.log(`Group: ${selectedGroup}, Rating: ${selectedRating}, Comment: '${commentInput ? commentInput.value.trim() : 'N/A'}'`);
 
-                         if (!selectedGroup || !selectedRating) {
-                             console.error("Submit cancelled: Group or Rating missing.");
-                             if(commentError) commentError.textContent = 'Fehler: Gruppe oder Bewertung fehlt.';
-                             playSound('error'); return;
-                         }
-                         if (isSubmitting) { console.warn("Submit cancelled: Already submitting."); return; }
-                         if (isMicRecording) { console.warn("Submit cancelled: Mic is active."); return; } // Don't submit while listening
+                        if (!selectedGroup || !selectedRating) {
+                            console.error("Submit cancelled: Group or Rating missing.");
+                            if(commentError) commentError.textContent = 'Fehler: Gruppe oder Bewertung fehlt.';
+                            playSound('error'); return;
+                        }
+                        if (isSubmitting) { console.warn("Submit cancelled: Already submitting."); return; }
+                        if (isMicRecording) { console.warn("Submit cancelled: Mic is active."); if(commentError) commentError.textContent = 'Bitte zuerst Aufnahme stoppen.'; playSound('error'); return; }
 
-                         const currentComment = commentInput ? commentInput.value.trim() : '';
-                         if (selectedRating === "3" && currentComment.length < commentRequiredLength) {
-                             console.error("Submit cancelled: Comment too short for negative rating.");
-                             if(commentError) commentError.textContent = `Negatives Feedback braucht einen Kommentar (mind. ${commentRequiredLength} Zeichen).`;
-                             if(commentInput) commentInput.focus(); playSound('error'); return;
-                         }
+                        const currentComment = commentInput ? commentInput.value.trim() : '';
+                        if (selectedRating === "3" && currentComment.length < commentRequiredLength) {
+                            console.error("Submit cancelled: Comment too short for negative rating.");
+                            if(commentError) commentError.textContent = `Negatives Feedback braucht einen Kommentar (mind. ${commentRequiredLength} Zeichen).`;
+                            if(commentInput) commentInput.focus(); playSound('error'); return;
+                        }
 
-                         isSubmitting = true;
-                         if(loadingIndicator) loadingIndicator.style.display = 'block';
-                         if(feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = true);
-                         if(allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = true);
-                         if(recordButton) recordButton.disabled = true; // Disable mic during submit
+                        isSubmitting = true;
+                        if(loadingIndicator) loadingIndicator.style.display = 'block';
+                        if(feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = true);
+                        if(allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = true);
+                        if(recordButton) recordButton.disabled = true; // Disable mic during submit
 
-                         const timestamp = formatTimestamp(new Date());
-                         const dataToSend = { timestamp: timestamp, gruppe: selectedGroup, bewertung: selectedRating, kommentar: currentComment };
-                         console.log("Data to send:", dataToSend);
+                        const timestamp = formatTimestamp(new Date());
+                        const dataToSend = { timestamp: timestamp, gruppe: selectedGroup, bewertung: selectedRating, kommentar: currentComment };
+                        console.log("Data to send:", dataToSend);
 
-                         try {
-                             console.log(`Sending POST request to: ${googleAppsScriptUrl}`);
-                             await fetch(googleAppsScriptUrl, { method: 'POST', mode: 'no-cors', cache: 'no-cache', body: JSON.stringify(dataToSend) });
-                             console.log("Fetch call completed (no-cors, assumed success).");
-                             if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; lastPlayedRatingSound = null; }
-                             playSound('sent');
-                             showScreen(thankYouScreen);
-                             setTimeout(resetApp, thankYouDuration);
-                         } catch (error) {
-                             console.error("Submission Error:", error);
-                             if(loadingIndicator) loadingIndicator.style.display = 'none';
-                             if(commentError) commentError.textContent = 'Fehler beim Senden. Bitte versuche es erneut.';
-                             playSound('error');
-                             if(feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false);
-                             if(allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
-                              if (recordButton) recordButton.disabled = !speechApiSupported; // Re-enable mic based on support
-                             isSubmitting = false;
-                         }
-                     }
+                        try {
+                            console.log(`Sending POST request to: ${googleAppsScriptUrl}`);
+                            // Using Fetch API with NO-CORS mode for Google Apps Script web app
+                            // Note: We won't get a response back in no-cors mode, so success is assumed if no error is thrown.
+                             await fetch(googleAppsScriptUrl, {
+                                 method: 'POST',
+                                 mode: 'no-cors', // Important for simple GAS POST requests from browser
+                                 cache: 'no-cache',
+                                 headers: {
+                                     // Content-Type is not strictly needed for no-cors, but good practice
+                                     'Content-Type': 'application/json' // Match if your GAS expects JSON
+                                     // If GAS uses parameters, use 'application/x-www-form-urlencoded'
+                                 },
+                                 body: JSON.stringify(dataToSend) // Send data as JSON string
+                                 // If using urlencoded: new URLSearchParams(dataToSend).toString()
+                             });
 
-                    // --- REMOVED startRecording, stopRecording, transcribeAudio ---
+                            console.log("Fetch call completed (no-cors, assumed success).");
+                            if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; lastPlayedRatingSound = null; }
+                            playSound('sent');
+                            showScreen(thankYouScreen);
+                            setTimeout(resetApp, thankYouDuration);
+                        } catch (error) {
+                            console.error("Submission Error:", error);
+                            if(loadingIndicator) loadingIndicator.style.display = 'none';
+                            if(commentError) commentError.textContent = 'Fehler beim Senden. Bitte versuche es erneut.';
+                            playSound('error');
+                            // Re-enable buttons on error
+                            if(feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false);
+                            if(allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
+                            if (recordButton) recordButton.disabled = !speechApiSupported; // Re-enable mic based on support
+                            isSubmitting = false;
+                        }
+                    }
 
                     // --- EVENT LISTENER ATTACHMENT ---
                     console.log("Attaching event listeners...");
@@ -748,22 +800,35 @@
                                     if(commentError) commentError.textContent = '';
                                     if (isSubmitting || isMicRecording) { console.log(`Rating click ignored: submitting=${isSubmitting}, recording=${isMicRecording}`); return; }
                                     if (!selectedGroup) { console.warn("Rating click ignored: No group selected."); if (commentError) commentError.textContent = 'Wähle zuerst deine Klasse/Gruppe'; playSound('error'); return; }
-                                    const currentRating = ratingValue; const currentComment = commentInput ? commentInput.value.trim() : '';
-                                    if (currentRating === "3" && currentComment.length < commentRequiredLength) {
-                                        console.warn("Submit blocked: Comment required for negative rating."); if (commentError) commentError.textContent = `Negatives Feedback braucht einen Kommentar (mind. ${commentRequiredLength} Zeichen).`; if (commentInput) commentInput.focus(); playSound('error'); return;
-                                    }
-                                    let soundKey = `rating-${currentRating}`; if (currentRating === "3") { soundKey = 'rating-3-success'; }
-                                    console.log(`SOUND: Rating ${currentRating} -> Key '${soundKey}'`);
-                                    if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; lastPlayedRatingSound = null; }
-                                    lastPlayedRatingSound = playSound(soundKey); selectedRating = currentRating;
+
+                                    selectedRating = ratingValue; // Set rating FIRST
                                     console.log('Selected rating:', selectedRating);
+
+                                    const currentComment = commentInput ? commentInput.value.trim() : '';
+                                    // Check comment length requirement AFTER setting rating
+                                    if (selectedRating === "3" && currentComment.length < commentRequiredLength) {
+                                        console.warn("Submit blocked: Comment required for negative rating.");
+                                        if (commentError) commentError.textContent = `Negatives Feedback braucht einen Kommentar (mind. ${commentRequiredLength} Zeichen).`;
+                                        if (commentInput) commentInput.focus(); playSound('error');
+                                        selectedRating = null; // Reset rating if check fails
+                                        return;
+                                    }
+
+                                    // Play sound associated with rating
+                                    let soundKey = `rating-${selectedRating}`;
+                                    if (selectedRating === "3") { soundKey = 'rating-3-success'; } // Assuming red.mp3 is for successful negative feedback submission trigger
+                                    console.log(`SOUND: Rating ${selectedRating} -> Key '${soundKey}'`);
+                                    if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; lastPlayedRatingSound = null; }
+                                    lastPlayedRatingSound = playSound(soundKey);
+
+                                    // Submit the feedback
                                     submitFeedback();
                                 });
                             });
                             console.log("Attached Rating Listeners.");
                         } else { console.error("Rating listener attachment skipped - no buttons."); }
 
-                        // --- Microphone Button Listener (Updated for Web Speech API) ---
+                        // --- Microphone Button Listener (Using Web Speech API) ---
                         if (recordButton && speechApiSupported) { // Check for support
                             recordButton.addEventListener('click', () => {
                                 console.log("MIC CLICK");
@@ -772,27 +837,37 @@
 
                                 if (isMicRecording) {
                                     console.log("Calling recognition.stop()");
-                                    recognition.stop(); // Request stop
+                                    try { recognition.stop(); } catch (e) { console.error("Error stopping recognition:", e); /* Handle potential errors if already stopped */ }
                                     // State and UI updates happen in onend/onerror
                                 } else {
                                     console.log("Calling recognition.start()");
                                     try {
                                         if(commentError) commentError.textContent = ''; // Clear previous errors
                                         recognition.start();
-                                         // State and UI updates happen in onstart
+                                        // State and UI updates happen in onstart
                                     } catch (e) {
                                         console.error("Error calling recognition.start():", e);
-                                         if(commentError) commentError.textContent = "Fehler beim Starten der Aufnahme.";
-                                         // Ensure state is reset if start fails immediately
-                                         isMicRecording = false;
+                                        if(commentError) commentError.textContent = "Fehler beim Starten der Aufnahme.";
+                                        // Ensure state is reset if start fails immediately
+                                        isMicRecording = false;
+                                        // Manually reset button state if start fails
+                                        if (recordButton) {
+                                            recordButton.classList.remove('is-recording');
+                                            recordButton.disabled = !speechApiSupported;
+                                            recordButton.title = speechApiSupported ? "Kommentar diktieren" : "Spracherkennung nicht unterstützt";
+                                            const defaultIcon = recordButton.querySelector('.mic-icon.default');
+                                            const recordingIcon = recordButton.querySelector('.mic-icon.recording');
+                                            if (defaultIcon) defaultIcon.style.display = 'inline';
+                                            if (recordingIcon) recordingIcon.style.display = 'none';
+                                        }
                                     }
                                 }
                             });
                             console.log("Attached Mic Listener for Web Speech API.");
                         } else if (recordButton) {
-                             console.log("Mic listener skipped - API not supported or button error.");
-                             recordButton.disabled = true;
-                             recordButton.title = "Spracherkennung nicht unterstützt";
+                            console.log("Mic listener skipped - API not supported or button error.");
+                            recordButton.disabled = true;
+                            recordButton.title = "Spracherkennung nicht unterstützt";
                         } else { console.error("Mic listener skipped - button not found."); }
 
                     } catch (listenerError) {
@@ -803,9 +878,9 @@
 
                     // --- Initial Setup ---
                     console.log("Running Initial Setup...");
-                    resetApp();
-                    if (thankYouScreen) thankYouScreen.classList.remove('active');
-                    if (feedbackScreen) feedbackScreen.classList.add('active');
+                    resetApp(); // Call reset to ensure clean initial state
+                    if (thankYouScreen) thankYouScreen.classList.remove('active'); // Ensure thank you is hidden
+                    if (feedbackScreen) feedbackScreen.classList.add('active'); // Ensure feedback is shown
                     console.log(`Initial State after setup: selectedGroup=${selectedGroup}, selectedRating=${selectedRating}, isSubmitting=${isSubmitting}, speechApiSupported=${speechApiSupported}`);
                     console.log("--- App Initialized Successfully ---");
 
@@ -814,7 +889,7 @@
                     const errElement = document.getElementById('comment-error'); const mainContent = document.getElementById('feedback-main-content');
                     if (errElement) { errElement.textContent = "Schwerwiegender App-Fehler beim Initialisieren. Bitte neu laden."; errElement.style.display = 'block'; }
                     else { alert("Schwerwiegender App-Fehler beim Initialisieren. Bitte laden Sie die Seite neu."); }
-                    if (mainContent) mainContent.style.display = 'none';
+                    if (mainContent) mainContent.style.display = 'none'; // Hide broken content if possible
                 }
             }); // End DOMContentLoaded listener
         } catch (globalError) {
