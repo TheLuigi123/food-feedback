@@ -461,7 +461,8 @@
                     let isMicRecording = false; // State for Web Speech API active
                     let recognition;
                     let speechApiSupported = false;
-                    let lastFinalTranscript = ''; // <<< Variable to track last appended transcript
+                    // No longer need lastFinalTranscript - we replace instead of append-checking
+                    // let lastFinalTranscript = '';
 
                     // --- Web Speech API Setup ---
                     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -478,7 +479,7 @@
                         recognition.onstart = () => {
                             console.log("Speech recognition started.");
                             isMicRecording = true;
-                            lastFinalTranscript = ''; // <<< RESET last transcript on new recording start
+                            // lastFinalTranscript = ''; // No longer needed
                             if (recordButton) {
                                 recordButton.classList.add('is-recording');
                                 recordButton.disabled = false; // Ensure it's clickable to stop
@@ -494,69 +495,70 @@
                             if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = true);
                         };
 
-                        // --- MODIFIED onresult with DEBUG LOGS and DUPLICATE CHECK ---
+                        // --- CORRECTED onresult: REPLACE comment, don't append ---
                         recognition.onresult = (event) => {
-                            console.log("--- onresult event ---", new Date().toLocaleTimeString()); // Log event time
+                            console.log("--- onresult event ---", new Date().toLocaleTimeString());
                             console.log("Result index:", event.resultIndex);
                             console.log("Results length:", event.results.length);
 
-                            let interimTranscript = '';
-                            let finalTranscript = '';
+                            let latestInterimTranscript = ''; // Store only the latest interim part
+                            let hasFinalResultInEvent = false; // Flag if ANY result in this specific event is final
 
-                            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                                const transcript = event.results[i][0].transcript;
+                            // --- Determine the full transcript based on event.results ---
+                            let fullTranscript = ""; // Build the complete text from the results list
+
+                            for (let i = 0; i < event.results.length; ++i) { // Iterate ALL results received so far in this session
+                                const transcriptPart = event.results[i][0].transcript;
                                 const confidence = event.results[i][0].confidence;
                                 const isFinal = event.results[i].isFinal;
 
-                                // Log details for EACH result in this event
-                                console.log(`  Result ${i}: Final=${isFinal}, Conf=${confidence ? confidence.toFixed(3) : 'N/A'}, Text='${transcript}'`);
+                                // Log details for each result part relevant to this event
+                                if (i >= event.resultIndex) {
+                                    console.log(`  Result ${i}: Final=${isFinal}, Conf=${confidence ? confidence.toFixed(3) : 'N/A'}, Text='${transcriptPart}'`);
+                                }
 
-                                if (isFinal) {
-                                    finalTranscript += transcript;
-                                } else {
-                                    interimTranscript += transcript;
+                                // Build the full string
+                                fullTranscript += transcriptPart;
+
+                                // Check if this specific event delivery contains a final result
+                                if (i >= event.resultIndex && isFinal) {
+                                    hasFinalResultInEvent = true;
+                                }
+                                // Store the very last interim transcript piece for display below box
+                                if (i === event.results.length - 1 && !isFinal) {
+                                    latestInterimTranscript = transcriptPart;
                                 }
                             }
-                            console.log("Raw Final Transcript collected for this event:", finalTranscript);
-                            console.log("Raw Interim Transcript collected for this event:", interimTranscript);
 
+                            fullTranscript = fullTranscript.trim(); // Clean the final composed transcript
 
-                            // --- Refined Appending Logic ---
-                            if (finalTranscript && commentInput) {
-                                const currentFinalText = finalTranscript.trim();
-                                // More robust check: Don't append if the current final text is the same as the last one processed OR empty
-                                if (currentFinalText.length > 0 && currentFinalText !== lastFinalTranscript) {
-                                    console.log("%cAppending final transcript:", "color: green; font-weight: bold;", currentFinalText); // Style log
-                                    const needsSpace = commentInput.value.length > 0 && !commentInput.value.endsWith(' ');
-                                    commentInput.value += (needsSpace ? ' ' : '') + currentFinalText + ' ';
-                                    commentInput.scrollTop = commentInput.scrollHeight;
-                                    lastFinalTranscript = currentFinalText; // Store the successfully appended text
-                                } else if (currentFinalText.length > 0) {
-                                    console.warn("%cSkipping duplicate or empty final transcript:", "color: orange;", currentFinalText); // Style log
+                            // --- Update UI Based on Final/Interim ---
+                            if (hasFinalResultInEvent) {
+                                // If any part of this event's results was final, REPLACE the textarea content
+                                console.log("%cREPLACING comment box content with final:", "color: blue; font-weight: bold;", fullTranscript);
+                                if (commentInput) {
+                                    commentInput.value = fullTranscript; // <<<<< KEY CHANGE: REPLACE, DON'T APPEND
+                                    commentInput.scrollTop = commentInput.scrollHeight; // Scroll to bottom
                                 }
-                            }
-                            // --- End Refined Appending Logic ---
-
-
-                            // Update status display (optional: show interim even if not appending final)
-                            if(commentError) {
-                                if (interimTranscript) {
-                                    commentError.textContent = 'Höre zu... ' + interimTranscript;
-                                } else if (isMicRecording && !finalTranscript) {
-                                    // Keep showing "Höre zu..." if still recording but no interim/final this time
-                                    commentError.textContent = 'Höre zu...';
+                                // Clear the interim display area OR reset to base 'Höre zu...'
+                                if (commentError) {
+                                    commentError.textContent = 'Höre zu...'; // Reset status
                                 }
-                                // The onend handler should clear the "Höre zu..." message if it wasn't an error
-                            }
+                                // Update button title
+                                if(recordButton) recordButton.title = "Aufnahme stoppen";
 
-                            // Update button title with interim text (optional)
-                            if(recordButton && interimTranscript) {
-                                recordButton.title = "Aufnahme stoppen (Interim: " + interimTranscript + ")";
-                            } else if (recordButton && isMicRecording) {
-                                recordButton.title = "Aufnahme stoppen";
-                            }
+                            } else if (latestInterimTranscript) {
+                                // Only interim results in this specific event delivery
+                                console.log("Updating interim display:", latestInterimTranscript);
+                                if (commentError) {
+                                    commentError.textContent = 'Höre zu... ' + latestInterimTranscript.trim();
+                                }
+                                if(recordButton) recordButton.title = "Aufnahme stoppen (Interim: " + latestInterimTranscript.trim() + ")";
 
-                        }; // --- End of MODIFIED onresult function ---
+                            } else {
+                                console.log("No new final or interim transcript in this event delivery.");
+                            }
+                        }; // --- End of CORRECTED onresult function ---
 
 
                         recognition.onerror = (event) => {
@@ -690,7 +692,7 @@
 
                         // Reset Mic button state specifically
                         isMicRecording = false; // Ensure state is reset
-                        lastFinalTranscript = ''; // Reset transcript tracker
+                        // lastFinalTranscript = ''; // No longer needed
                         if (recordButton) {
                             recordButton.classList.remove('is-recording'); // Ensure class is removed
                             recordButton.disabled = !speechApiSupported; // Reset disabled based on support
