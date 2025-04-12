@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Essensrückmeldung</title>
     <style>
-              /* --- START OF style.css content --- */
+        /* --- START OF style.css content --- */
 
         /* Basic Reset & Defaults */
         * {
@@ -86,32 +86,40 @@
         .feedback-main-content {
             flex: 1; /* Take remaining space */
             display: flex;
-            flex-direction: column; /* Stack children vertically */
-            align-items: center; /* Horizontally center children */
-            padding: 20px 30px;
-            /* Add padding at the bottom for spacing */
-            padding-bottom: 30px;
+            flex-direction: column;
+            /* --- CHANGE: Vertically center the content block --- */
+            justify-content: center;
+            /* Horizontally center the content block */
+            align-items: center;
+            padding: 20px 30px; /* Padding around the centered block */
             position: relative; /* Keep for corner buttons */
-            /* Remove gap, manage spacing with margins/padding */
-            /* gap: 20px; */
             overflow-y: auto; /* Allow scrolling if content overflows */
             height: 100%; /* Ensure it tries to take full height */
         }
 
-        /* --- NEW: Wrapper for Vertically Centered Content (Heading + Comment Group) --- */
+        /* --- NEW: Wrapper for the vertically centered block --- */
+        .main-content-centered-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center items within the block horizontally */
+            gap: 25px; /* Space between wrapper, options, loader */
+            width: 100%; /* Take available width */
+            max-width: 530px; /* Constrain width of the block */
+            /* Remove margin auto, centering is handled by parent */
+        }
+
+
+        /* --- Wrapper for Heading + Comment Group (inside centered block) --- */
         .main-center-wrapper {
             display: flex;
             flex-direction: column;
-            /* Align children (h2, comment-group) to the start (left) */
+            /* --- CHANGE: Align children (h2, comment-group) to the start (left) --- */
             align-items: flex-start;
-            width: 100%; /* Take full width */
-            max-width: 530px; /* Match comment group max-width */
+            width: 100%; /* Take full width of parent block */
+            /* Max width constraint is now on parent (.main-content-centered-block) */
             gap: 15px; /* Space between heading and comment group */
-            /* Remove auto margins - let it sit closer to top */
-            /* margin-top: auto; */
-            /* margin-bottom: auto; */
-            /* Add space below the comment group */
-            margin-bottom: 20px;
+            /* Remove margins, spacing handled by parent's gap */
+            margin-bottom: 0;
             flex-shrink: 0; /* Prevent shrinking */
         }
 
@@ -119,7 +127,7 @@
         .main-center-wrapper h2 {
             color: #333;
             font-size: 1.6em;
-            /* Change text alignment */
+            /* --- CHANGE: Align text left --- */
             text-align: left;
             width: 100%;
             margin-bottom: 0; /* Use gap in parent */
@@ -128,7 +136,6 @@
         /* --- Comment Group (inside main-center-wrapper) --- */
         .comment-group {
              width: 100%; /* Take full width of parent wrapper */
-             /* max-width: 530px; -- Set on parent wrapper now */
              display: flex;
              flex-direction: column; /* Stack elements vertically */
              align-items: center; /* Center children (textarea row, clear button, error) */
@@ -158,31 +165,53 @@
         #record-comment-button.is-recording .mic-icon.default { display: none; }
         #record-comment-button.is-recording .mic-icon.recording { display: inline; }
         #record-comment-button.is-transcribing { background-color: #ddeeff; box-shadow: 0 0 8px rgba(100, 150, 255, 0.5); cursor: not-allowed; animation: none; }
+
+        /* --- CHANGE: Styling for Clear/Weiter button --- */
         .clear-button {
-          display: block; width: 100%; padding: 8px 15px; background-color: #e0e0e0; color: #333;
-          border: 1px solid #ccc; border-radius: 5px; cursor: pointer; font-size: 0.9em;
-          text-align: center; transition: background-color 0.2s ease; margin-top: 5px;
+          display: block; /* Will be toggled by JS */
+          width: 100%;
+          padding: 8px 15px;
+          background-color: #e0e0e0; /* Default: Grey for Löschen */
+          color: #333;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 0.9em;
+          text-align: center;
+          transition: background-color 0.2s ease, color 0.2s ease; /* Added color transition */
+          margin-top: 5px;
         }
-        .clear-button:hover { background-color: #d1d1d1; }
-        .clear-button:disabled { background-color: #f0f0f0; color: #aaa; cursor: not-allowed; border-color: #e0e0e0; opacity: 0.6; }
+        .clear-button.weiter-mode {
+            background-color: #007bff; /* Blue for Weiter */
+            color: white;
+            border-color: #0056b3;
+        }
+        .clear-button:not(.weiter-mode):hover {
+            background-color: #d1d1d1; /* Hover for Löschen */
+        }
+         .clear-button.weiter-mode:hover {
+             background-color: #0056b3; /* Hover for Weiter */
+         }
+        .clear-button:disabled {
+            background-color: #f0f0f0; color: #aaa; cursor: not-allowed; border-color: #e0e0e0; opacity: 0.6;
+        }
         .error-message {
             width: 100%; color: #dc3545; font-size: 0.9em; margin-top: 0;
             min-height: 1.2em; text-align: center; padding-left: 0; display: block;
         }
 
-        /* --- Rating Circles Container (Below main-center-wrapper) --- */
+        /* --- Rating Circles Container (inside centered block) --- */
         .feedback-options {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 35px;
-            width: 100%; /* Take full width of main content */
+            width: 100%; /* Take full width of parent block */
             flex-wrap: wrap;
-            /* Push this container towards the bottom */
-            margin-top: auto;
+            /* Remove margins, spacing handled by parent's gap */
+            margin-top: 0;
             flex-shrink: 0; /* Prevent shrinking */
-            /* Add some padding below the buttons */
-            padding-bottom: 10px;
+            padding-bottom: 0;
         }
         .feedback-button {
             border: none; border-radius: 50%; width: 160px; height: 160px; cursor: pointer;
@@ -196,20 +225,15 @@
         .feedback-button.positive { background-color: #28a745; }
         .feedback-button.neutral { background-color: #ffc107; color: white; }
         .feedback-button.negative { background-color: #dc3545; }
-        /* NEW: Style for disabled rating buttons */
         .feedback-button:disabled {
-            opacity: 0.4; /* Make them quite faded */
-            cursor: not-allowed;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Reduce shadow */
-            transform: scale(0.98); /* Slightly shrink */
-            /* Prevent hover effects when disabled */
-            pointer-events: none;
+            opacity: 0.4; cursor: not-allowed; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transform: scale(0.98); pointer-events: none;
         }
 
         /* --- Container for Top-Right Buttons --- */
         #top-right-buttons {
             position: absolute; top: 15px; right: 20px; display: flex; flex-direction: column;
-            gap: 8px; align-items: flex-end; z-index: 3;
+            gap: 8px; align-items: flex-end; z-index: 3; /* Needs high z-index */
         }
         .corner-group-button {
             background-color: #6c757d; color: white; border: none; border-radius: 12px; padding: 8px 15px;
@@ -218,11 +242,11 @@
             width: 100px; text-align: center;
         }
 
-        /* --- Loading Indicator --- */
+        /* --- Loading Indicator (inside centered block) --- */
         #loading-indicator {
             font-size: 1.1em; color: #555;
-             /* Add margin below buttons and above loader */
-            margin-top: 15px;
+            /* Remove margins, spacing handled by parent's gap */
+            margin-top: 0;
             flex-shrink: 0;
         }
 
@@ -257,38 +281,50 @@
             .feedback-sidebar .group-button { width: auto; max-width: 80px; }
 
             .feedback-main-content {
-                order: 1; /* Keep main content at top */
-                flex: 1; padding: 15px;
-                /* Reset gap removal for mobile if needed, or keep managing with margins */
-                /* gap: 15px; */
-                justify-content: flex-start; /* Align top */
-                overflow-y: auto; position: static; width: 100%;
-                padding-bottom: 20px; /* Adjust bottom padding for mobile */
+                order: 1; /* Keep main content area at top */
+                flex: 1; /* Allow it to grow */
+                padding: 15px;
+                /* --- CHANGE: Override vertical centering for mobile, align top --- */
+                justify-content: flex-start;
+                overflow-y: auto;
+                position: static; /* Reset position */
+                width: 100%;
+                /* Add bottom padding to prevent cutting off last element */
+                padding-bottom: 20px;
             }
 
-            .main-center-wrapper {
-                order: 2; /* Place heading/comment below corner buttons */
-                margin: 0; /* Reset base margins */
-                margin-top: 10px; /* Add space below corner buttons */
-                margin-bottom: 15px; /* Space below comment group */
-                gap: 10px; /* Adjust gap */
-                max-width: 100%; /* Allow full width */
-                /* Ensure alignment is still correct on mobile */
-                align-items: flex-start;
+            /* --- NEW: Adjust centered block for mobile --- */
+            .main-content-centered-block {
+                 order: 2; /* Place below corner buttons */
+                 gap: 15px; /* Adjust gap */
+                 max-width: 100%; /* Allow full width */
+                 /* No margin needed, handled by parent padding/order */
             }
 
              #top-right-buttons {
-                order: 1; /* Place at the very top */
-                position: static; flex-direction: row; justify-content: flex-end;
-                width: 100%; margin-bottom: 0; gap: 10px; padding: 0 10px;
+                order: 1; /* Place corner buttons at the very top */
+                position: static; /* Reset position */
+                flex-direction: row; justify-content: flex-end;
+                width: 100%; margin-bottom: 10px; /* Space below buttons */
+                gap: 10px; padding: 0 10px; /* Adjust padding */
             }
             .corner-group-button { width: auto; padding: 6px 12px; font-size: 0.8em; border-radius: 10px; }
+
+            /* --- Adjust wrapper inside block for mobile --- */
+            .main-center-wrapper {
+                /* order: 2; -- Order handled by parent block */
+                /* margin: 0; -- Handled by parent block */
+                /* margin-top: 10px; -- Handled by parent block */
+                /* margin-bottom: 15px; -- Handled by parent block's gap */
+                gap: 10px; /* Adjust gap */
+                /* max-width: 100%; -- Handled by parent block */
+                align-items: flex-start; /* Keep left alignment */
+            }
 
             .main-center-wrapper h2 {
                 font-size: 1.3em;
                 margin-top: 0;
-                 /* Ensure text alignment is still correct */
-                text-align: left;
+                text-align: left; /* Keep left alignment */
             }
             .comment-group { max-width: 100%; margin-top: 5px; }
             .comment-input-row { gap: 5px; }
@@ -297,21 +333,19 @@
             .clear-button { font-size: 0.85em; padding: 6px 12px; }
 
             .feedback-options {
-                order: 3; /* Place rating buttons below heading/comment */
+                /* order: 3; -- Order handled by parent block */
                 gap: 15px;
-                /* Remove margin-top: auto for mobile's fixed layout */
-                margin-top: 20px;
-                 /* Remove padding-bottom as padding is on parent */
-                 padding-bottom: 0;
-                 width: 100%; /* Ensure it takes full width on mobile */
+                /* margin-top: 20px; -- Handled by parent block's gap */
+                padding-bottom: 0;
+                width: 100%; /* Ensure it takes full width on mobile */
             }
             .feedback-button { width: 100px; height: 100px; font-size: 0.9em; }
 
             #thank-you-text { font-size: 4em; }
             #loading-indicator {
-                order: 4; position: static;
-                /* Adjust margin for mobile */
-                margin-top: 15px;
+                /* order: 4; -- Order handled by parent block */
+                position: static;
+                margin-top: 0; /* Handled by parent block's gap */
             }
             .error-message { max-width: 100%; padding-left: 0; text-align: center;}
         }
@@ -319,13 +353,17 @@
             .feedback-button { width: 80px; height: 80px; font-size: 0.8em; }
             .feedback-sidebar .group-button { max-width: 60px; }
             .corner-group-button { padding: 5px 10px; font-size: 0.75em; }
+             /* --- Adjust centered block for mobile --- */
+            .main-content-centered-block {
+                 gap: 10px; /* Adjust gap */
+            }
             .main-center-wrapper h2 { font-size: 1.2em; }
             .comment-group { margin-top: 0; }
             #comment { height: 45px; min-height: 45px; }
             #record-comment-button { width: 32px; height: 32px; font-size: 1.1em; margin-top: 2px; }
             #thank-you-text { font-size: 3em; }
             .clear-button { font-size: 0.8em; padding: 5px 10px; }
-            .feedback-options { gap: 10px; margin-top: 15px;} /* Adjust gap and margin for smallest screens */
+            .feedback-options { gap: 10px; margin-top: 0;} /* Adjust gap */
         }
 
         /* --- END OF style.css content --- */
@@ -343,39 +381,46 @@
             </div>
             <!-- Main Content -->
             <div class="feedback-main-content">
-                <!-- Top Right Buttons -->
+                <!-- Top Right Buttons (Absolutely Positioned - outside the centered block) -->
                 <div id="top-right-buttons">
                     <button class="group-button corner-group-button" data-group="Lehrer">Lehrer</button>
                     <button class="group-button corner-group-button" data-group="Besucher">Besucher</button>
                 </div>
 
-                <!-- NEW: Wrapper for Vertically Centered Content -->
-                <div class="main-center-wrapper">
-                    <h2>Meine Rückmeldung zum Essen heute:</h2>
-                    <!-- Comment Group (Textarea row, Clear Button, Error) -->
-                    <div class="comment-group">
-                        <div class="comment-input-row">
-                            <textarea id="comment" rows="3" placeholder="Kommentar (optional für grün und gelb)"></textarea>
-                            <button id="record-comment-button" title="Kommentar diktieren">
-                                <span class="mic-icon default">🎤</span>
-                                <span class="mic-icon recording" style="display: none;">🟥</span>
+                <!-- NEW: Wrapper for the vertically centered block -->
+                <div class="main-content-centered-block">
+
+                    <!-- Wrapper for Heading + Comment Group -->
+                    <div class="main-center-wrapper">
+                        <h2>Meine Rückmeldung zum Essen heute:</h2>
+                        <!-- Comment Group (Textarea row, Clear Button, Error) -->
+                        <div class="comment-group">
+                            <div class="comment-input-row">
+                                <textarea id="comment" rows="3" placeholder="Kommentar (optional für grün und gelb)"></textarea>
+                                <button id="record-comment-button" title="Kommentar diktieren">
+                                    <span class="mic-icon default">🎤</span>
+                                    <span class="mic-icon recording" style="display: none;">🟥</span>
+                                </button>
+                            </div>
+                            <button type="button" id="clear-comment-button" class="clear-button hidden">
+                                <!-- Text will be set by JS -->
                             </button>
-                        </div>
-                        <button type="button" id="clear-comment-button" class="clear-button hidden">
-                            Kommentar löschen
-                        </button>
-                        <p id="comment-error" class="error-message"></p>
-                    </div> <!-- End of comment-group -->
-                </div> <!-- End of main-center-wrapper -->
+                            <p id="comment-error" class="error-message"></p>
+                        </div> <!-- End of comment-group -->
+                    </div> <!-- End of main-center-wrapper -->
 
-                <!-- Rating Buttons (Moved Here) -->
-                <div class="feedback-options">
-                    <button class="feedback-button positive" data-rating="1"><span>mir hat es<br>geschmeckt</span></button>
-                    <button class="feedback-button neutral" data-rating="2"><span>war ok</span></button>
-                    <button class="feedback-button negative" data-rating="3"><span>hat nicht<br>geschmeckt</span></button>
-                </div>
+                    <!-- Rating Buttons -->
+                    <div class="feedback-options">
+                        <button class="feedback-button positive" data-rating="1"><span>mir hat es<br>geschmeckt</span></button>
+                        <button class="feedback-button neutral" data-rating="2"><span>war ok</span></button>
+                        <button class="feedback-button negative" data-rating="3"><span>hat nicht<br>geschmeckt</span></button>
+                    </div>
 
-                <div id="loading-indicator" style="display: none;">Sende...</div>
+                    <!-- Loading Indicator -->
+                    <div id="loading-indicator" style="display: none;">Sende...</div>
+
+                </div> <!-- End of main-content-centered-block -->
+
             </div> <!-- End of feedback-main-content -->
         </div> <!-- End of feedback-section -->
 
@@ -387,25 +432,24 @@
 
     <script>
         // --- START OF updated script.js content ---
-        // --- VERY BASIC CHECK ---
         console.log("--- script.js started loading ---");
 
-        // Wrap entire code in a try...catch to catch early syntax errors
         try {
             document.addEventListener('DOMContentLoaded', () => {
                 console.log("--- DOMContentLoaded event fired ---");
 
-                // Wrap handler content in try...catch for initialization errors
                 try {
                     // --- CONFIGURATION ---
                     const googleAppsScriptUrl = 'https://script.google.com/macros/s/AKfycbw_PX8InYEZm1tc6uVLYYZpBSTYjVB4fXXHCj62nLsZr7n6N2nspr3wXLjoP68GgIdIsw/exec';
                     const thankYouDuration = 1200;
                     const commentRequiredLength = 15;
                     const maxCommentLength = 100;
+                    const CLEAR_BUTTON_TEXT_DELETE = "Kommentar löschen";
+                    const CLEAR_BUTTON_TEXT_NEXT = "Weiter";
                     // ---------------------
 
                     // --- AUDIO CONFIGURATION ---
-                    const sounds = { /* ... sounds remain the same ... */
+                    const sounds = {
                         '1-4 Klasse': new Audio('1-4_klasse.wav'), '5-8 Klasse': new Audio('5-8_klasse.mp3'),
                         '9-12 Klasse': new Audio('9-12_klasse.wav'), 'rating-1': new Audio('green.mp3'),
                         'rating-2': new Audio('yellow.mp3'), 'rating-3-success': new Audio('red.mp3'),
@@ -429,12 +473,11 @@
                     const clearCommentButton = document.getElementById('clear-comment-button');
 
                     // --- Initial Checks & State ---
-                    if (!feedbackScreen || !thankYouScreen || !loadingIndicator || !commentInput || !commentError || !recordButton || !clearCommentButton) { /* ... critical stop ... */ console.error("CRITICAL STOP: Essential UI element missing!"); /* ... */ return; }
-                    if (allGroupButtons.length === 0) { /* ... critical stop ... */ console.error("CRITICAL STOP: 0 group buttons found!"); /* ... */ return; }
-                    if (feedbackRatingButtons.length === 0) { /* ... critical stop ... */ console.error("CRITICAL STOP: 0 rating buttons found!"); /* ... */ return; }
+                    if (!feedbackScreen || !thankYouScreen || !loadingIndicator || !commentInput || !commentError || !recordButton || !clearCommentButton) { console.error("CRITICAL STOP: Essential UI element missing!"); return; }
+                    if (allGroupButtons.length === 0) { console.error("CRITICAL STOP: 0 group buttons found!"); return; }
+                    if (feedbackRatingButtons.length === 0) { console.error("CRITICAL STOP: 0 rating buttons found!"); return; }
                     console.log("Essential elements selection successful.");
 
-                    // <<< NEW: Disable rating buttons initially >>>
                     feedbackRatingButtons.forEach(btn => btn.disabled = true);
 
                     let selectedGroup = null, selectedRating = null, isSubmitting = false, lastPlayedRatingSound = null;
@@ -445,7 +488,6 @@
                     // --- Web Speech API Setup ---
                     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                     if (SpeechRecognition) {
-                        // ... (Speech API setup remains the same) ...
                         speechApiSupported = true;
                         recognition = new SpeechRecognition();
                         recognition.continuous = false;
@@ -455,27 +497,24 @@
                         recognition.onstart = () => {
                             console.log("Speech recognition started.");
                             isMicRecording = true; isTranscribing = false;
-                            if (recordButton) { /* ... update mic button UI to recording ... */
+                            if (recordButton) {
                                 recordButton.classList.add('is-recording'); recordButton.classList.remove('is-transcribing'); recordButton.disabled = true; recordButton.title = "Aufnahme läuft...";
                                 const defaultIcon = recordButton.querySelector('.mic-icon.default'); const recordingIcon = recordButton.querySelector('.mic-icon.recording');
                                 if (defaultIcon) defaultIcon.style.display = 'none'; if (recordingIcon) recordingIcon.style.display = 'inline';
                             }
                             if(commentError) commentError.textContent = 'Höre zu...';
-                            // <<< Disable Rating Buttons during recording >>>
                             if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = true);
-                            if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = true); // Also disable group changes
-                            if (clearCommentButton) clearCommentButton.disabled = false;
+                            if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = true);
+                            if (clearCommentButton) clearCommentButton.disabled = true; // Also disable clear/weiter during recording
                         };
 
                         recognition.onresult = (event) => {
-                           // ... (onresult logic remains the same - append text, call enforceCommentLimit) ...
                            console.log("--- onresult event ---");
                            isTranscribing = true;
-                           if (recordButton) { /* ... update mic UI to transcribing ... */ recordButton.classList.remove('is-recording'); recordButton.classList.add('is-transcribing'); recordButton.title = "Verarbeite..."; }
+                           if (recordButton) { recordButton.classList.remove('is-recording'); recordButton.classList.add('is-transcribing'); recordButton.title = "Verarbeite..."; }
                            if (commentError && commentError.textContent === 'Höre zu...') { commentError.textContent = 'Verarbeite...'; }
                            if (event.results.length > 0) {
                                const result = event.results[event.results.length - 1]; const transcript = result[0].transcript.trim();
-                               /* ... logging ... */
                                if (transcript.length > 0 && commentInput) {
                                    const needsSpace = commentInput.value.length > 0 && !commentInput.value.endsWith(' ');
                                    commentInput.value += (needsSpace ? ' ' : '') + transcript; commentInput.scrollTop = commentInput.scrollHeight;
@@ -485,48 +524,123 @@
                         };
 
                         recognition.onerror = (event) => {
-                           // ... (onerror logic remains the same - show error, reset flags) ...
-                           console.error('Speech recognition error:', event.error, event.message); let errorMessage = 'Spracherkennungsfehler.'; /* ... switch statement ... */
-                           if (event.error !== 'aborted') { if(commentError) commentError.textContent = errorMessage; playSound('error'); }
+                           console.error('Speech recognition error:', event.error, event.message);
+                           let errorMessage = 'Spracherkennungsfehler.';
+                           // Add specific error messages if needed based on event.error
+                           if (event.error !== 'aborted' && event.error !== 'no-speech') {
+                               if(commentError) commentError.textContent = errorMessage;
+                               playSound('error');
+                           } else if (event.error === 'no-speech') {
+                               if(commentError) commentError.textContent = 'Nichts gehört.';
+                           }
                            isMicRecording = false; isTranscribing = false;
+                           // onend will handle button re-enabling
                         };
 
                         recognition.onend = () => {
-                           // ... (onend logic resets mic button, clears temporary errors, re-enables buttons IF NOT SUBMITTING) ...
                             console.log("Speech recognition ended.");
                             isMicRecording = false; isTranscribing = false;
-                            if (recordButton) { /* ... reset mic button UI ... */ recordButton.classList.remove('is-recording', 'is-transcribing'); recordButton.disabled = isSubmitting || !speechApiSupported; recordButton.title = speechApiSupported ? "Kommentar diktieren" : "Spracherkennung nicht unterstützt"; const defaultIcon = recordButton.querySelector('.mic-icon.default'); const recordingIcon = recordButton.querySelector('.mic-icon.recording'); if (defaultIcon) defaultIcon.style.display = 'inline'; if (recordingIcon) recordingIcon.style.display = 'none'; }
-                            if (commentError && (commentError.textContent.startsWith('Höre zu...') || commentError.textContent.startsWith('Verarbeite...'))) { commentError.textContent = ''; }
+                            if (recordButton) {
+                                recordButton.classList.remove('is-recording', 'is-transcribing'); recordButton.disabled = isSubmitting || !speechApiSupported; recordButton.title = speechApiSupported ? "Kommentar diktieren" : "Spracherkennung nicht unterstützt";
+                                const defaultIcon = recordButton.querySelector('.mic-icon.default'); const recordingIcon = recordButton.querySelector('.mic-icon.recording');
+                                if (defaultIcon) defaultIcon.style.display = 'inline'; if (recordingIcon) recordingIcon.style.display = 'none';
+                             }
+                             if (commentError && (commentError.textContent.startsWith('Höre zu...') || commentError.textContent.startsWith('Verarbeite...') || commentError.textContent.startsWith('Nichts gehört.'))) {
+                                 commentError.textContent = '';
+                             }
 
                             // Re-enable inputs ONLY IF NOT SUBMITTING
                             if (!isSubmitting) {
-                                // <<< Re-enable Rating Buttons ONLY if a group is selected >>>
                                 if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = !selectedGroup);
                                 if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
-                                if (clearCommentButton) clearCommentButton.disabled = false;
+                                if (clearCommentButton) clearCommentButton.disabled = false; // Re-enable
                             }
-                            updateClearButtonVisibility();
+                            updateClearButtonVisibility(); // Update based on final state
                         };
 
-                    } else { /* ... handle unsupported API ... */
+                    } else {
                          console.warn("Web Speech API is not supported."); speechApiSupported = false; if (recordButton) { recordButton.disabled = true; recordButton.title = "Spracherkennung nicht unterstützt"; }
                     }
                     // --- End Web Speech API Setup ---
 
                     // --- Functions Definitions ---
 
-                    function updateClearButtonVisibility() { /* ... remains the same ... */ if (!commentInput || !clearCommentButton) return; try { const commentText = commentInput.value.trim(); clearCommentButton.classList.toggle('hidden', commentText.length === 0); } catch (e) { console.error("Err update clear visibility:", e); if(clearCommentButton) clearCommentButton.classList.add('hidden');} }
-                    function enforceCommentLimit() { /* ... remains the same ... */ if (!commentInput || !commentError) return; const currentComment = commentInput.value; const limitExceededMsg = `Max. ${maxCommentLength} Zeichen erlaubt`; if (currentComment.length > maxCommentLength) { console.warn(`Comment truncated.`); commentInput.value = currentComment.substring(0, maxCommentLength); if (commentError.textContent !== limitExceededMsg) { commentError.textContent = limitExceededMsg;} } else { if (commentError.textContent === limitExceededMsg) { commentError.textContent = '';} } updateClearButtonVisibility(); }
-                    function playSound(soundKey) { /* ... remains the same ... */ if (!sounds[soundKey]) {console.warn(`Sound ${soundKey} not found.`); return null;} try { if (lastPlayedRatingSound && soundKey.startsWith('rating-')) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; } sounds[soundKey].currentTime = 0; const p = sounds[soundKey].play(); if(p) p.then(_ => {if (soundKey.startsWith('rating-')) lastPlayedRatingSound = sounds[soundKey];}).catch(e=>console.error(`Audio Err ${soundKey}:`, e)); return sounds[soundKey]; } catch(e){console.error(`Play Err ${soundKey}:`,e);} return null;}
-                    function showScreen(screenToShow){ /* ... remains the same ... */ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); screenToShow.classList.add('active'); }
-                    function formatTimestamp(date){ /* ... remains the same ... */ const p=(n)=>n.toString().padStart(2,'0'); return `${p(date.getDate())}.${p(date.getMonth()+1)}.${date.getFullYear()} ${p(date.getHours())}:${p(date.getMinutes())}:${p(date.getSeconds())}`; }
+                    // --- CHANGE: Updated function to handle Weiter/Löschen logic ---
+                    function updateClearButtonVisibility() {
+                        if (!commentInput || !clearCommentButton) return;
+                        try {
+                            const commentText = commentInput.value.trim();
+                            const hasFocus = document.activeElement === commentInput;
+
+                            if (hasFocus && commentText.length > 0) {
+                                // Focused with text -> Weiter mode
+                                clearCommentButton.textContent = CLEAR_BUTTON_TEXT_NEXT;
+                                clearCommentButton.classList.add('weiter-mode');
+                                clearCommentButton.classList.remove('hidden');
+                                clearCommentButton.disabled = isSubmitting || isMicRecording || isTranscribing; // Ensure correct disabled state
+                            } else if (!hasFocus && commentText.length > 0) {
+                                // Not focused with text -> Löschen mode
+                                clearCommentButton.textContent = CLEAR_BUTTON_TEXT_DELETE;
+                                clearCommentButton.classList.remove('weiter-mode');
+                                clearCommentButton.classList.remove('hidden');
+                                clearCommentButton.disabled = isSubmitting || isMicRecording || isTranscribing; // Ensure correct disabled state
+                            } else {
+                                // Empty or Focused & Empty -> Hidden
+                                clearCommentButton.classList.add('hidden');
+                                clearCommentButton.classList.remove('weiter-mode'); // Reset style just in case
+                                clearCommentButton.textContent = CLEAR_BUTTON_TEXT_DELETE; // Reset text
+                            }
+                        } catch (e) {
+                            console.error("Err update clear visibility:", e);
+                            if(clearCommentButton) {
+                                clearCommentButton.classList.add('hidden');
+                                clearCommentButton.classList.remove('weiter-mode');
+                                clearCommentButton.textContent = CLEAR_BUTTON_TEXT_DELETE;
+                            }
+                        }
+                    }
+
+                    function enforceCommentLimit() {
+                         if (!commentInput || !commentError) return;
+                         const currentComment = commentInput.value;
+                         const limitExceededMsg = `Max. ${maxCommentLength} Zeichen erlaubt`;
+                         if (currentComment.length > maxCommentLength) {
+                             console.warn(`Comment truncated.`);
+                             commentInput.value = currentComment.substring(0, maxCommentLength);
+                             if (commentError.textContent !== limitExceededMsg && !commentError.textContent.includes('Rote Bewertung braucht')) {
+                                commentError.textContent = limitExceededMsg;
+                             }
+                         } else {
+                            // Clear length error ONLY if it's the current message and not the required comment message
+                             if (commentError.textContent === limitExceededMsg) {
+                                commentError.textContent = '';
+                             }
+                         }
+                         updateClearButtonVisibility(); // Check button state after change
+                    }
+
+                    function playSound(soundKey) {
+                        if (!sounds[soundKey]) {console.warn(`Sound ${soundKey} not found.`); return null;}
+                        try {
+                            if (lastPlayedRatingSound && soundKey.startsWith('rating-')) {
+                                lastPlayedRatingSound.pause();
+                                lastPlayedRatingSound.currentTime = 0;
+                             }
+                            sounds[soundKey].currentTime = 0;
+                            const p = sounds[soundKey].play();
+                            if(p) p.then(_ => {if (soundKey.startsWith('rating-')) lastPlayedRatingSound = sounds[soundKey];}).catch(e=>console.error(`Audio Err ${soundKey}:`, e));
+                            return sounds[soundKey];
+                        } catch(e){console.error(`Play Err ${soundKey}:`,e);}
+                        return null;
+                    }
+                    function showScreen(screenToShow){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); screenToShow.classList.add('active'); }
+                    function formatTimestamp(date){ const p=(n)=>n.toString().padStart(2,'0'); return `${p(date.getDate())}.${p(date.getMonth()+1)}.${date.getFullYear()} ${p(date.getHours())}:${p(date.getMinutes())}:${p(date.getSeconds())}`; }
 
                     function deselectAllGroups(){
                         console.log("Deselecting all groups.");
                         selectedGroup = null;
                         if (feedbackScreen) feedbackScreen.classList.remove('group-selected');
                         if (allGroupButtons) allGroupButtons.forEach(btn => btn.classList.remove('selected'));
-                        // <<< NEW: Disable rating buttons when no group is selected >>>
                         if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = true);
                         console.log(`Selected group after deselect: ${selectedGroup}`);
                     }
@@ -536,40 +650,53 @@
                         if ((isMicRecording || isTranscribing) && recognition) { try { recognition.abort(); } catch (e) { console.warn("Err aborting recog:", e); } }
                         isMicRecording = false; isTranscribing = false; isSubmitting = false;
                         selectedRating = null;
-                        deselectAllGroups(); // <<< This now also disables rating buttons
+                        deselectAllGroups(); // Disables rating buttons
 
                         if (commentInput) commentInput.value = '';
                         if (commentError) commentError.textContent = '';
                         if (loadingIndicator) loadingIndicator.style.display = 'none';
-                        // Group buttons re-enabled by deselectAllGroups indirectly (or directly below)
+
                         if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
-                        // <<< Ensure Rating Buttons are disabled on reset >>>
-                        if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = true);
-                        if (clearCommentButton) clearCommentButton.disabled = false;
+                        if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = true); // Ensure disabled
+                        if (clearCommentButton) clearCommentButton.disabled = false; // Re-enable initially
 
-                        if (recordButton) { /* ... reset mic button UI ... */ recordButton.classList.remove('is-recording', 'is-transcribing'); recordButton.disabled = !speechApiSupported; recordButton.title = speechApiSupported ? "Kommentar diktieren" : "Spracherkennung nicht unterstützt"; const defaultIcon = recordButton.querySelector('.mic-icon.default'); const recordingIcon = recordButton.querySelector('.mic-icon.recording'); if (defaultIcon) defaultIcon.style.display = 'inline'; if (recordingIcon) recordingIcon.style.display = 'none'; }
+                        if (recordButton) {
+                            recordButton.classList.remove('is-recording', 'is-transcribing'); recordButton.disabled = !speechApiSupported; recordButton.title = speechApiSupported ? "Kommentar diktieren" : "Spracherkennung nicht unterstützt";
+                            const defaultIcon = recordButton.querySelector('.mic-icon.default'); const recordingIcon = recordButton.querySelector('.mic-icon.recording');
+                            if (defaultIcon) defaultIcon.style.display = 'inline'; if (recordingIcon) recordingIcon.style.display = 'none';
+                         }
 
-                        updateClearButtonVisibility();
+                        updateClearButtonVisibility(); // Reset button state/visibility
                         lastPlayedRatingSound = null;
                         if (feedbackScreen && thankYouScreen) showScreen(feedbackScreen);
                         console.log("--- App Reset Complete ---");
                     }
 
                     async function submitFeedback() {
-                       // ... (submit logic mostly the same, ensure buttons are disabled/enabled correctly) ...
-                        console.log("%c--- SUBMITTING FEEDBACK ---", "color: blue; font-weight: bold;"); /* ... logging ... */
-                        if (!selectedGroup) { /* ... group missing error ... */ return; }
-                        if (!selectedRating) { /* ... rating missing error ... */ return; }
-                        if (isSubmitting) { /* ... already submitting ... */ return; }
-                        if (isMicRecording || isTranscribing) { /* ... mic active error ... */ return; }
-                        const currentComment = commentInput ? commentInput.value.trim() : '';
-                        if (commentInput && commentInput.value.length > maxCommentLength) { /* ... max length error ... */ return; }
-                        const commentToSend = commentInput ? commentInput.value : '';
-                        if (selectedRating === "3" && commentToSend.trim().length < commentRequiredLength) { /* ... comment required error ... */ return; }
+                        console.log("%c--- SUBMITTING FEEDBACK ---", "color: blue; font-weight: bold;");
+                        const groupErrorMsg = 'Bitte zuerst eine Gruppe auswählen.';
+                        const ratingErrorMsg = 'Bitte eine Bewertung auswählen.';
+                        const micErrorMsg = 'Bitte warten bis die Spracheingabe fertig ist.';
+                        const lengthErrorMsg = `Max. ${maxCommentLength} Zeichen erlaubt.`;
+                        const requiredErrorMsg = `Rote Bewertung braucht Kommentar (min. ${commentRequiredLength} Zeichen).`;
+
+                        if (!selectedGroup) { console.warn("Submit stopped: Group missing."); if(commentError) commentError.textContent = groupErrorMsg; playSound('error'); return; }
+                        if (!selectedRating) { console.warn("Submit stopped: Rating missing."); if(commentError) commentError.textContent = ratingErrorMsg; playSound('error'); return; }
+                        if (isSubmitting) { console.warn("Submit stopped: Already submitting."); return; }
+                        if (isMicRecording || isTranscribing) { console.warn("Submit stopped: Mic active."); if(commentError) commentError.textContent = micErrorMsg; playSound('error'); return; }
+
+                        const currentComment = commentInput ? commentInput.value : ''; // Get full comment before trimming for checks
+                        const trimmedComment = currentComment.trim();
+
+                        if (currentComment.length > maxCommentLength) { console.warn("Submit stopped: Comment too long."); if(commentError) commentError.textContent = lengthErrorMsg; playSound('error'); return; }
+                        if (selectedRating === "3" && trimmedComment.length < commentRequiredLength) { console.warn("Submit stopped: Comment required/too short."); if(commentError) commentError.textContent = requiredErrorMsg; if (commentInput) commentInput.focus(); playSound('error'); return; }
 
                         isSubmitting = true;
                         if(loadingIndicator) loadingIndicator.style.display = 'block';
-                        if (commentError && (commentError.textContent.includes('Gruppe') || /* ... */ commentError.textContent.includes('Kommentar'))) { commentError.textContent = ''; }
+                        // Clear validation errors before submit
+                        if (commentError && [groupErrorMsg, ratingErrorMsg, micErrorMsg, lengthErrorMsg, requiredErrorMsg].includes(commentError.textContent)) {
+                             commentError.textContent = '';
+                        }
 
                         // Disable ALL buttons during submit
                         if(feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = true);
@@ -577,27 +704,30 @@
                         if(recordButton) recordButton.disabled = true;
                         if(clearCommentButton) clearCommentButton.disabled = true;
 
-                        const timestamp = formatTimestamp(new Date()); const dataToSend = { /* ... */ timestamp: timestamp, gruppe: selectedGroup, bewertung: selectedRating, kommentar: commentToSend };
+                        const timestamp = formatTimestamp(new Date());
+                        const dataToSend = { timestamp: timestamp, gruppe: selectedGroup, bewertung: selectedRating, kommentar: currentComment }; // Send untrimmed comment
                         console.log("Data to send:", dataToSend);
 
                         try {
-                            /* ... fetch call ... */
                             await fetch(googleAppsScriptUrl, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(dataToSend) });
                             console.log("Fetch completed (assumed success).");
-                            /* ... play sound, show thank you, schedule reset ... */
-                            if (lastPlayedRatingSound) { /* ... stop sound ... */ } playSound('sent'); showScreen(thankYouScreen); setTimeout(resetApp, thankYouDuration);
+                            if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; }
+                            playSound('sent');
+                            showScreen(thankYouScreen);
+                            setTimeout(resetApp, thankYouDuration);
 
                         } catch (error) {
-                            /* ... handle submission error ... */
-                            console.error("Submission Fetch Error:", error); if(loadingIndicator) loadingIndicator.style.display = 'none'; if(commentError) commentError.textContent = 'Fehler beim Senden.'; playSound('error');
+                            console.error("Submission Fetch Error:", error);
+                            if(loadingIndicator) loadingIndicator.style.display = 'none';
+                            if(commentError) commentError.textContent = 'Fehler beim Senden.';
+                            playSound('error');
                             // Re-enable appropriate buttons on error
                             isSubmitting = false;
-                            if(allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false); // Re-enable group selection
-                            // <<< Re-enable Rating Buttons ONLY if group is still selected (it should be) >>>
-                            if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = !selectedGroup);
+                            if(allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
+                            if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = !selectedGroup); // Only if group selected
                             if (recordButton) recordButton.disabled = !speechApiSupported;
                             if (clearCommentButton) clearCommentButton.disabled = false;
-                            updateClearButtonVisibility();
+                            updateClearButtonVisibility(); // Update clear button state
                         }
                     }
 
@@ -613,7 +743,7 @@
                                     const clickedButton = event.currentTarget;
                                     const wasSelected = clickedButton.classList.contains('selected');
 
-                                    deselectAllGroups(); // This now disables rating buttons
+                                    deselectAllGroups(); // Disables rating buttons
 
                                     if (!wasSelected) {
                                         selectedGroup = groupName;
@@ -621,11 +751,10 @@
                                         if (['1-4 Klasse', '5-8 Klasse', '9-12 Klasse'].includes(groupName)) playSound(groupName);
                                         if (feedbackScreen) feedbackScreen.classList.add('group-selected');
                                         clickedButton.classList.add('selected');
-                                        if(commentError && !commentError.textContent.includes(maxCommentLength)) commentError.textContent = '';
+                                        // Clear group selection error if present
+                                        if(commentError && commentError.textContent === 'Bitte zuerst eine Gruppe auswählen.') commentError.textContent = '';
 
-                                        // <<< NEW: Enable rating buttons >>>
-                                        if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false);
-
+                                        if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false); // Enable rating buttons
                                     } else {
                                         console.log(`Deselected group: ${groupName}`);
                                         // Rating buttons already disabled by deselectAllGroups()
@@ -640,23 +769,27 @@
                             feedbackRatingButtons.forEach((button) => {
                                 const ratingValue = button.dataset.rating; if (!ratingValue) return;
                                 button.addEventListener('click', (event) => {
-                                    // Button is already disabled if no group selected, so no extra check needed here
-                                    if (isSubmitting || isMicRecording || isTranscribing) return;
-                                    if(commentError && !commentError.textContent.includes(maxCommentLength)) commentError.textContent = '';
+                                    if (isSubmitting || isMicRecording || isTranscribing || button.disabled) return; // Check disabled just in case
+                                    // Clear rating selection error if present
+                                     if(commentError && commentError.textContent === 'Bitte eine Bewertung auswählen.') commentError.textContent = '';
 
                                     selectedRating = ratingValue; console.log('Selected rating:', selectedRating);
                                     const currentComment = commentInput ? commentInput.value.trim() : '';
 
                                     if (selectedRating === "3" && currentComment.length < commentRequiredLength) {
-                                         /* ... comment required error handling ... */
                                          if (commentError) commentError.textContent = `Rote Bewertung braucht Kommentar (min. ${commentRequiredLength} Zeichen).`;
-                                         if (commentInput) commentInput.focus(); playSound('error');
-                                         playSound('rating-3-success'); // Play rating sound anyway
+                                         if (commentInput) commentInput.focus(); // Focus input to make it obvious
+                                         // Play rating sound even if validation fails, but don't submit
+                                         if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; }
+                                         lastPlayedRatingSound = playSound('rating-3-success');
+                                         playSound('error'); // Also play error sound
                                          return; // Don't submit yet
                                     }
-                                    /* ... play rating sound ... */
-                                    let soundKey = `rating-${selectedRating}`; if (selectedRating === "3") soundKey = 'rating-3-success';
-                                    if (lastPlayedRatingSound) { /* ... stop sound ... */ } lastPlayedRatingSound = playSound(soundKey);
+
+                                    let soundKey = `rating-${selectedRating}`;
+                                    if (selectedRating === "3") soundKey = 'rating-3-success';
+                                    if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; }
+                                    lastPlayedRatingSound = playSound(soundKey);
                                     submitFeedback(); // Attempt submission
                                 });
                             });
@@ -665,26 +798,84 @@
 
                         // Microphone Button Listener
                         if (recordButton && speechApiSupported) {
-                           // ... (mic click logic remains the same) ...
-                           recordButton.addEventListener('click', () => { if (!recognition) return; if (isSubmitting || isMicRecording || isTranscribing) return; try { if(commentError && !commentError.textContent.includes(maxCommentLength)) commentError.textContent = ''; recognition.start(); } catch (e) { /* ... handle immediate start error ... */ }});
+                           recordButton.addEventListener('click', () => {
+                               if (!recognition) return;
+                               if (isSubmitting || isMicRecording || isTranscribing) return;
+                               // Clear mic error before starting
+                               if(commentError && commentError.textContent === 'Bitte warten bis die Spracheingabe fertig ist.') commentError.textContent = '';
+                               try {
+                                   recognition.start();
+                                } catch (e) {
+                                    console.error("Error starting recognition:", e);
+                                    if(commentError) commentError.textContent = 'Fehler beim Start der Spracheingabe.';
+                                    playSound('error');
+                                }
+                           });
                            console.log("Attached Mic Listener.");
-                        } else if (recordButton) { /* ... disable unsupported mic ... */ }
+                        } else if (recordButton) { recordButton.disabled = true; recordButton.title = "Spracherkennung nicht unterstützt"; }
 
-                        // Clear Comment Button Listener
+                        // --- CHANGE: Modified Clear Comment Button Listener ---
                         if (clearCommentButton) {
-                           // ... (clear click logic remains the same - clear input, abort recog, clear errors, hide button) ...
-                           clearCommentButton.addEventListener('click', () => { if (isSubmitting) return; if (commentInput) commentInput.value = ''; if ((isMicRecording || isTranscribing) && recognition) { try { recognition.abort(); isMicRecording = false; isTranscribing = false; } catch (e) { /* ... handle abort error ... */ } } if(commentError) commentError.textContent = ''; updateClearButtonVisibility(); });
-                           console.log("Attached Clear Comment Listener.");
+                           clearCommentButton.addEventListener('click', () => {
+                                if (isSubmitting || isMicRecording || isTranscribing) return; // Should be disabled anyway, but check
+
+                                if (clearCommentButton.textContent === CLEAR_BUTTON_TEXT_NEXT) {
+                                    // "Weiter" mode -> Blur the input
+                                    console.log("Weiter clicked - blurring input");
+                                    if (commentInput) commentInput.blur();
+                                    // updateClearButtonVisibility will be called by the blur event listener
+                                } else {
+                                    // "Kommentar löschen" mode -> Clear the text
+                                    console.log("Kommentar löschen clicked");
+                                    if (commentInput) commentInput.value = '';
+                                    // Abort recognition only if it was accidentally running (shouldn't be)
+                                    if ((isMicRecording || isTranscribing) && recognition) {
+                                        try { recognition.abort(); isMicRecording = false; isTranscribing = false; } catch (e) { console.warn("Error aborting recognition on clear:", e); }
+                                    }
+                                    // Clear related errors
+                                    if(commentError && (commentError.textContent.includes(maxCommentLength) || commentError.textContent.includes('Rote Bewertung braucht'))) {
+                                        commentError.textContent = '';
+                                    }
+                                    updateClearButtonVisibility(); // Hide button after clearing
+                                    if (commentInput) commentInput.focus(); // Optional: refocus after clearing
+                                }
+                           });
+                           console.log("Attached Clear/Weiter Comment Listener.");
                         }
 
                         // Comment Input Listener
                          if (commentInput) {
-                           // ... (input listener logic remains the same - enforce limit, maybe clear required error) ...
-                            commentInput.addEventListener('input', () => { enforceCommentLimit(); if (selectedRating === "3" && commentError?.textContent.includes("Rote Bewertung braucht")) { if (commentInput.value.trim().length >= commentRequiredLength) { if (!commentError.textContent.includes(maxCommentLength)) { commentError.textContent = ''; } } } });
+                            commentInput.addEventListener('input', () => {
+                                enforceCommentLimit(); // This now calls updateClearButtonVisibility
+                                // Clear "comment required" error if length is now sufficient
+                                if (selectedRating === "3" && commentError?.textContent.includes("Rote Bewertung braucht")) {
+                                    if (commentInput.value.trim().length >= commentRequiredLength) {
+                                        // Only clear if the error isn't the length limit one
+                                        if (!commentError.textContent.includes(maxCommentLength)) {
+                                             commentError.textContent = '';
+                                        }
+                                    }
+                                }
+                             });
                             console.log("Attached input listener to comment box.");
+
+                            // --- CHANGE: Add Focus and Blur Listeners ---
+                            commentInput.addEventListener('focus', () => {
+                                console.log("Comment input focused");
+                                updateClearButtonVisibility(); // Show "Weiter" if text exists
+                            });
+                            commentInput.addEventListener('blur', () => {
+                                console.log("Comment input blurred");
+                                // Small delay to allow click on "Weiter" to register before hiding/changing it
+                                setTimeout(updateClearButtonVisibility, 100);
+                            });
+                             console.log("Attached focus/blur listeners to comment box.");
                          }
 
-                    } catch (listenerError) { /* ... handle listener attachment error ... */ }
+                    } catch (listenerError) {
+                        console.error("Error attaching event listeners:", listenerError);
+                        // Optional: Display a generic error to the user if critical listeners fail
+                    }
                     // --- End Listener Attachment ---
 
                     // --- Initial Setup ---
@@ -692,9 +883,17 @@
                     resetApp(); // Calls deselectAllGroups which disables rating buttons initially
                     console.log("--- App Initialized Successfully ---");
 
-                } catch (initError) { /* ... handle DOMContentLoaded init error ... */ }
+                } catch (initError) {
+                    console.error("Error during DOMContentLoaded initialization:", initError);
+                     // Optional: Display a user-friendly error message on the page
+                     document.body.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Ein Fehler ist beim Initialisieren der Anwendung aufgetreten. Bitte laden Sie die Seite neu.</p>';
+                }
             }); // End DOMContentLoaded listener
-        } catch (globalError) { /* ... handle global script error ... */ }
+        } catch (globalError) {
+             console.error("Global script error:", globalError);
+             // Optional: Display a user-friendly error message on the page
+             document.body.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Ein unerwarteter Fehler ist aufgetreten. Bitte laden Sie die Seite neu.</p>';
+        }
         console.log("--- script.js finished parsing (sync part) ---");
         // --- END OF updated script.js content ---
     </script>
