@@ -443,12 +443,14 @@
                     const commentInput = document.getElementById('comment');
                     const commentError = document.getElementById('comment-error');
                     const recordButton = document.getElementById('record-comment-button'); // Microphone button
+                    const clearCommentButton = document.getElementById('clear-comment-button'); // <<< NEW: Clear button
 
                     // Strict check for essential elements
-                    if (!feedbackScreen || !thankYouScreen || !loadingIndicator || !commentInput || !commentError || !recordButton) {
+                    if (!feedbackScreen || !thankYouScreen || !loadingIndicator || !commentInput || !commentError || !recordButton || !clearCommentButton) { // <<< Added check for clear button
                         console.error("CRITICAL STOP: Essential UI element missing!");
-                        if (commentError) commentError.textContent = "App-Fehler: UI nicht vollständig geladen.";
-                        else alert("App-Fehler: UI nicht vollständig geladen.");
+                        let missingElement = !feedbackScreen ? "feedback screen" : !thankYouScreen ? "thank you screen" : !loadingIndicator ? "loading indicator" : !commentInput ? "comment input" : !commentError ? "comment error" : !recordButton ? "record button" : "clear comment button";
+                        if (commentError) commentError.textContent = `App-Fehler: UI-Element (${missingElement}) nicht gefunden.`;
+                        else alert(`App-Fehler: UI-Element (${missingElement}) nicht gefunden.`);
                         return;
                     }
                     if (allGroupButtons.length === 0) { console.error("CRITICAL STOP: 0 group buttons found!"); if(commentError) commentError.textContent = "App-Fehler: Gruppen-Buttons fehlen."; return; }
@@ -469,7 +471,6 @@
                         console.log("Web Speech API is supported!");
                         speechApiSupported = true;
                         recognition = new SpeechRecognition();
-                        // --- KEY CHANGE: Continuous mode OFF ---
                         recognition.continuous = false; // Stop after first utterance/pause
                         recognition.interimResults = false; // Might as well disable if not continuous
                         recognition.lang = 'de-DE'; // Set language to German
@@ -488,61 +489,57 @@
                                 if (recordingIcon) recordingIcon.style.display = 'inline';
                             }
                             if(commentError) commentError.textContent = 'Höre zu...'; // Indicate listening
-                            // Disable other inputs
+                            // Disable other inputs (but NOT clear button)
                             if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = true);
                             if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = true);
+                            // Leave clearCommentButton enabled
                         };
 
-                        // --- SIMPLIFIED onresult for continuous=false ---
                         recognition.onresult = (event) => {
                             console.log("--- onresult event (continuous=false) ---");
 
                             if (event.results.length > 0) {
-                                const result = event.results[event.results.length - 1]; // Get the last (likely only) result
+                                const result = event.results[event.results.length - 1];
                                 const transcript = result[0].transcript.trim();
-                                const isFinal = result.isFinal; // Should usually be true here
+                                const isFinal = result.isFinal;
                                 const confidence = result[0].confidence;
 
                                 console.log(`Result: Final=${isFinal}, Conf=${confidence ? confidence.toFixed(3) : 'N/A'}, Text='${transcript}'`);
 
-                                // Append the result to the textarea (since each run is a new utterance)
-                                if (transcript.length > 0) {
+                                if (transcript.length > 0 && commentInput) {
                                      console.log("%cAPPENDING transcript:", "color: green; font-weight: bold;", transcript);
                                      const needsSpace = commentInput.value.length > 0 && !commentInput.value.endsWith(' ');
                                      commentInput.value += (needsSpace ? ' ' : '') + transcript; // APPEND this time
                                      commentInput.scrollTop = commentInput.scrollHeight;
+                                     updateClearButtonVisibility(); // <<< Show clear button if needed
                                 } else {
                                     console.log("Received empty transcript.");
                                 }
                             } else {
                                 console.log("No results received in this event.");
                             }
-                             // Recognition stops automatically, state is reset in onend
+                            // Recognition stops automatically, state is reset in onend
                         };
-                        // --- End of SIMPLIFIED onresult ---
-
 
                         recognition.onerror = (event) => {
                             console.error('Speech recognition error:', event.error, event.message);
                             let errorMessage = 'Spracherkennungsfehler.';
                             switch(event.error) {
-                                case 'no-speech': errorMessage = 'Keine Sprache erkannt. Bitte erneut versuchen.'; break; // Changed message slightly
+                                case 'no-speech': errorMessage = 'Keine Sprache erkannt. Bitte erneut versuchen.'; break;
                                 case 'audio-capture': errorMessage = 'Mikrofonfehler. Zugriff erlaubt?'; break;
                                 case 'not-allowed': errorMessage = 'Zugriff auf Mikrofon verweigert.'; break;
                                 case 'network': errorMessage = 'Netzwerkfehler bei der Spracherkennung.'; break;
-                                case 'aborted': errorMessage = 'Aufnahme abgebrochen.'; break; // Might happen if user clicks away quickly
+                                case 'aborted': errorMessage = 'Aufnahme abgebrochen.'; break;
                                 default: errorMessage = `Fehler: ${event.error}`;
                             }
-                            // Always show error unless it's a manual abort (which shouldn't happen easily now)
                             if (event.error !== 'aborted') {
                                 if(commentError) commentError.textContent = errorMessage;
                                 playSound('error');
                             }
-                            // `onend` will likely fire after error too, handling UI reset
+                            // `onend` handles UI reset
                         };
 
                         recognition.onend = () => {
-                            // This now fires after each utterance (or error)
                             console.log("Speech recognition ended (continuous=false).");
                             isMicRecording = false; // No longer recording
                             if (recordButton) {
@@ -554,13 +551,14 @@
                                 if (defaultIcon) defaultIcon.style.display = 'inline';
                                 if (recordingIcon) recordingIcon.style.display = 'none';
                             }
-                            // Clear listening status
                             if (commentError && commentError.textContent.startsWith('Höre zu...')) {
                                 commentError.textContent = '';
                             }
                             // Re-enable other inputs
                             if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false);
                             if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
+                            // Ensure clear button state is correct based on comment (might already be visible)
+                            updateClearButtonVisibility();
                         };
 
                     } else {
@@ -574,6 +572,23 @@
                     // --- End Web Speech API Setup ---
 
                     // --- Functions Definitions ---
+
+                    // <<< NEW: Function to control clear button visibility >>>
+                    function updateClearButtonVisibility() {
+                        if (!commentInput || !clearCommentButton) return; // Safety check
+                        try {
+                            const commentText = commentInput.value.trim();
+                            if (commentText.length > 0) {
+                                clearCommentButton.classList.remove('hidden');
+                            } else {
+                                clearCommentButton.classList.add('hidden');
+                            }
+                        } catch (e) {
+                            console.error("Error updating clear button visibility:", e);
+                            if(clearCommentButton) clearCommentButton.classList.add('hidden'); // Hide on error
+                        }
+                    }
+
                     function playSound(soundKey) {
                         console.log(`Attempting to play sound: ${soundKey}`);
                         if (sounds[soundKey]) {
@@ -617,10 +632,9 @@
 
                     function resetApp() {
                         console.log("--- Resetting App ---");
-                        // Stop speech recognition just in case it's somehow stuck (shouldn't be in continuous=false)
                         if (isMicRecording && recognition) {
                             console.log("Stopping speech recognition during reset (precautionary).");
-                             try { recognition.abort(); } catch (e) { console.warn("Error aborting recognition during reset:", e); } // Use abort for forceful stop
+                             try { recognition.abort(); } catch (e) { console.warn("Error aborting recognition during reset:", e); }
                         }
                         isSubmitting = false;
                         selectedRating = null;
@@ -632,17 +646,21 @@
                         if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
                         if (feedbackScreen && thankYouScreen) showScreen(feedbackScreen);
 
-                        // Reset Mic button state specifically
+                        // Reset Mic button state
                         isMicRecording = false; // Ensure state is reset
                         if (recordButton) {
-                            recordButton.classList.remove('is-recording'); // Ensure class is removed
-                            recordButton.disabled = !speechApiSupported; // Reset disabled based on support
+                            recordButton.classList.remove('is-recording');
+                            recordButton.disabled = !speechApiSupported;
                             recordButton.title = speechApiSupported ? "Kommentar diktieren" : "Spracherkennung nicht unterstützt";
                             const defaultIcon = recordButton.querySelector('.mic-icon.default');
                             const recordingIcon = recordButton.querySelector('.mic-icon.recording');
                             if (defaultIcon) defaultIcon.style.display = 'inline';
                             if (recordingIcon) recordingIcon.style.display = 'none';
                         }
+
+                        // <<< Reset Clear Button state >>>
+                         updateClearButtonVisibility();
+                         if (clearCommentButton) clearCommentButton.disabled = false; // Ensure enabled
 
                         lastPlayedRatingSound = null;
                         console.log("--- App Reset Complete ---");
@@ -658,7 +676,6 @@
                             playSound('error'); return;
                         }
                         if (isSubmitting) { console.warn("Submit cancelled: Already submitting."); return; }
-                        // isMicRecording check is less critical now, as it stops automatically, but keep for safety
                         if (isMicRecording) { console.warn("Submit cancelled: Mic seems active (should have stopped)."); if(commentError) commentError.textContent = 'Bitte warten bis Aufnahme endet.'; playSound('error'); return; }
 
                         const currentComment = commentInput ? commentInput.value.trim() : '';
@@ -672,7 +689,8 @@
                         if(loadingIndicator) loadingIndicator.style.display = 'block';
                         if(feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = true);
                         if(allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = true);
-                        if(recordButton) recordButton.disabled = true; // Disable mic during submit
+                        if(recordButton) recordButton.disabled = true;
+                        if(clearCommentButton) clearCommentButton.disabled = true; // <<< Disable clear button during submit
 
                         const timestamp = formatTimestamp(new Date());
                         const dataToSend = { timestamp: timestamp, gruppe: selectedGroup, bewertung: selectedRating, kommentar: currentComment };
@@ -692,6 +710,7 @@
                             if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; lastPlayedRatingSound = null; }
                             playSound('sent');
                             showScreen(thankYouScreen);
+                            // resetApp is called via timeout below
                             setTimeout(resetApp, thankYouDuration);
                         } catch (error) {
                             console.error("Submission Error:", error);
@@ -701,7 +720,9 @@
                             // Re-enable buttons on error
                             if(feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false);
                             if(allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
-                            if (recordButton) recordButton.disabled = !speechApiSupported; // Re-enable mic based on support
+                            if (recordButton) recordButton.disabled = !speechApiSupported;
+                            if (clearCommentButton) clearCommentButton.disabled = false; // <<< Re-enable clear button on error
+                            updateClearButtonVisibility(); // Ensure visibility is correct
                             isSubmitting = false;
                         }
                     }
@@ -715,7 +736,6 @@
                                 const groupName = button.dataset.group; if (!button || !groupName) { console.warn(`Skipping group button at index ${index}`); return; }
                                 button.addEventListener('click', (event) => {
                                     console.log(`%cGROUP CLICK: '${groupName}'`, "background: orange; color: black;");
-                                    // Disallow clicks if recording (even though it should stop fast)
                                     if (isSubmitting || isMicRecording) { console.log(`Group click ignored: submitting=${isSubmitting}, recording=${isMicRecording}`); return; }
                                     const clickedButton = event.currentTarget; const group = groupName; const wasSelected = clickedButton.classList.contains('selected');
                                     if (wasSelected) { deselectAllGroups(); } else {
@@ -736,56 +756,45 @@
                                 button.addEventListener('click', (event) => {
                                     console.log(`RATING CLICK: '${ratingValue}'`);
                                     if(commentError) commentError.textContent = '';
-                                    // Disallow clicks if recording
                                     if (isSubmitting || isMicRecording) { console.log(`Rating click ignored: submitting=${isSubmitting}, recording=${isMicRecording}`); return; }
                                     if (!selectedGroup) { console.warn("Rating click ignored: No group selected."); if (commentError) commentError.textContent = 'Wähle zuerst deine Klasse/Gruppe'; playSound('error'); return; }
 
-                                    selectedRating = ratingValue; // Set rating FIRST
+                                    selectedRating = ratingValue;
                                     console.log('Selected rating:', selectedRating);
 
                                     const currentComment = commentInput ? commentInput.value.trim() : '';
-                                    // Check comment length requirement AFTER setting rating
                                     if (selectedRating === "3" && currentComment.length < commentRequiredLength) {
                                         console.warn("Submit blocked: Comment required for negative rating.");
                                         if (commentError) commentError.textContent = `Negatives Feedback braucht einen Kommentar (mind. ${commentRequiredLength} Zeichen).`;
                                         if (commentInput) commentInput.focus(); playSound('error');
-                                        selectedRating = null; // Reset rating if check fails
+                                        selectedRating = null;
                                         return;
                                     }
-
-                                    // Play sound associated with rating
                                     let soundKey = `rating-${selectedRating}`;
                                     if (selectedRating === "3") { soundKey = 'rating-3-success'; }
                                     console.log(`SOUND: Rating ${selectedRating} -> Key '${soundKey}'`);
                                     if (lastPlayedRatingSound) { lastPlayedRatingSound.pause(); lastPlayedRatingSound.currentTime = 0; lastPlayedRatingSound = null; }
                                     lastPlayedRatingSound = playSound(soundKey);
-
-                                    // Submit the feedback
                                     submitFeedback();
                                 });
                             });
                             console.log("Attached Rating Listeners.");
                         } else { console.error("Rating listener attachment skipped - no buttons."); }
 
-                        // --- Microphone Button Listener (Using Web Speech API, continuous=false) ---
-                        if (recordButton && speechApiSupported) { // Check for support
+                        // Microphone Button Listener
+                        if (recordButton && speechApiSupported) {
                             recordButton.addEventListener('click', () => {
                                 console.log("MIC CLICK (continuous=false)");
                                 if (!recognition) { console.error("Recognition not initialized!"); return; }
                                 if (isSubmitting) { console.log("Mic ignored: Submitting"); return; }
-                                // Don't need to check isMicRecording to stop, as it stops automatically
-                                // Just start a new recognition session if not already submitting
                                 console.log("Calling recognition.start()");
                                 try {
-                                    // Don't clear comment box automatically, user might want to add multiple phrases
-                                    if(commentError) commentError.textContent = ''; // Clear previous errors
+                                    if(commentError) commentError.textContent = '';
                                     recognition.start();
-                                    // State and UI updates happen in onstart, onresult, onend
                                 } catch (e) {
                                     console.error("Error calling recognition.start():", e);
                                     if(commentError) commentError.textContent = "Fehler beim Starten der Aufnahme.";
-                                    isMicRecording = false; // Ensure state is reset if start fails immediately
-                                    // Manually reset button state if start fails
+                                    isMicRecording = false;
                                     if (recordButton) {
                                         recordButton.classList.remove('is-recording');
                                         recordButton.disabled = !speechApiSupported;
@@ -804,6 +813,50 @@
                             recordButton.title = "Spracherkennung nicht unterstützt";
                         } else { console.error("Mic listener skipped - button not found."); }
 
+                        // <<< NEW: Clear Comment Button Listener >>>
+                        if (clearCommentButton) {
+                            clearCommentButton.addEventListener('click', () => {
+                                console.log("CLEAR COMMENT CLICK");
+                                if (commentInput) {
+                                    commentInput.value = ''; // Clear the text area
+                                }
+                                // Attempt to stop recording if active (using abort for immediate effect)
+                                if (isMicRecording && recognition) {
+                                    console.log("Aborting speech recognition due to clear click.");
+                                    try {
+                                        recognition.abort();
+                                        // Note: onend will likely fire after abort, handling UI reset
+                                    } catch (e) {
+                                        console.warn("Error aborting recognition on clear:", e);
+                                        // Manually ensure state is reset if abort fails
+                                        isMicRecording = false;
+                                        // Manually reset mic button UI just in case onend doesn't fire
+                                        if (recordButton) {
+                                            recordButton.classList.remove('is-recording');
+                                            recordButton.disabled = !speechApiSupported;
+                                            recordButton.title = speechApiSupported ? "Kommentar diktieren" : "Spracherkennung nicht unterstützt";
+                                            const defaultIcon = recordButton.querySelector('.mic-icon.default');
+                                            const recordingIcon = recordButton.querySelector('.mic-icon.recording');
+                                            if (defaultIcon) defaultIcon.style.display = 'inline';
+                                            if (recordingIcon) recordingIcon.style.display = 'none';
+                                            // Re-enable other buttons if necessary
+                                            if (feedbackRatingButtons) feedbackRatingButtons.forEach(btn => btn.disabled = false);
+                                            if (allGroupButtons) allGroupButtons.forEach(btn => btn.disabled = false);
+                                        }
+                                    }
+                                }
+                                if(commentError) commentError.textContent = ''; // Clear any error message
+                                updateClearButtonVisibility(); // Hide the clear button itself
+                            });
+                            console.log("Attached Clear Comment Listener.");
+                        }
+
+                        // <<< NEW: Listener for manual input in comment box >>>
+                         if (commentInput) {
+                            commentInput.addEventListener('input', updateClearButtonVisibility);
+                            console.log("Attached input listener to comment box.");
+                         }
+
                     } catch (listenerError) {
                         console.error("Error during event listener attachment:", listenerError);
                         if(commentError) commentError.textContent = "App-Fehler: Listener konnten nicht initialisiert werden.";
@@ -812,9 +865,10 @@
 
                     // --- Initial Setup ---
                     console.log("Running Initial Setup...");
-                    resetApp(); // Call reset to ensure clean initial state
-                    if (thankYouScreen) thankYouScreen.classList.remove('active'); // Ensure thank you is hidden
-                    if (feedbackScreen) feedbackScreen.classList.add('active'); // Ensure feedback is shown
+                    resetApp(); // Call reset first (which now includes updateClearButtonVisibility)
+                    if (thankYouScreen) thankYouScreen.classList.remove('active');
+                    if (feedbackScreen) feedbackScreen.classList.add('active');
+                    // updateClearButtonVisibility(); // Called inside resetApp now
                     console.log(`Initial State after setup: selectedGroup=${selectedGroup}, selectedRating=${selectedRating}, isSubmitting=${isSubmitting}, speechApiSupported=${speechApiSupported}`);
                     console.log("--- App Initialized Successfully ---");
 
@@ -823,7 +877,7 @@
                     const errElement = document.getElementById('comment-error'); const mainContent = document.getElementById('feedback-main-content');
                     if (errElement) { errElement.textContent = "Schwerwiegender App-Fehler beim Initialisieren. Bitte neu laden."; errElement.style.display = 'block'; }
                     else { alert("Schwerwiegender App-Fehler beim Initialisieren. Bitte laden Sie die Seite neu."); }
-                    if (mainContent) mainContent.style.display = 'none'; // Hide broken content if possible
+                    if (mainContent) mainContent.style.display = 'none';
                 }
             }); // End DOMContentLoaded listener
         } catch (globalError) {
