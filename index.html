@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Essensrückmeldung</title>
     <style>
-        /* --- START OF style.css content --- */
+               /* --- START OF style.css content --- */
 
         /* Basic Reset & Defaults */
         * {
@@ -86,40 +86,35 @@
         .feedback-main-content {
             flex: 1; /* Take remaining space */
             display: flex;
+            /* --- CHANGE: Stack items vertically --- */
             flex-direction: column;
-            /* --- CHANGE: Vertically center the content block --- */
-            justify-content: center;
-            /* Horizontally center the content block */
+            /* --- CHANGE: Push content towards the bottom --- */
+            justify-content: flex-end;
+            /* --- CHANGE: Center items horizontally --- */
             align-items: center;
-            padding: 20px 30px; /* Padding around the centered block */
+            /* --- CHANGE: Add padding, remove bottom padding (handled by vh) --- */
+            padding: 20px 30px 0;
+            /* --- CHANGE: Add space below the lowest element (rating buttons) ~30% from bottom edge */
+            padding-bottom: 15vh; /* Adjust this value (e.g., 10vh to 20vh) */
             position: relative; /* Keep for corner buttons */
             overflow-y: auto; /* Allow scrolling if content overflows */
             height: 100%; /* Ensure it tries to take full height */
         }
 
-        /* --- NEW: Wrapper for the vertically centered block --- */
-        .main-content-centered-block {
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Center items within the block horizontally */
-            gap: 25px; /* Space between wrapper, options, loader */
-            width: 100%; /* Take available width */
-            max-width: 530px; /* Constrain width of the block */
-            /* Remove margin auto, centering is handled by parent */
-        }
+        /* --- REMOVED: .main-content-centered-block is no longer used for overall centering --- */
+        /* Styles like max-width are moved to the direct children below */
 
-
-        /* --- Wrapper for Heading + Comment Group (inside centered block) --- */
+        /* --- Wrapper for Heading + Comment Group (Now direct child of main-content) --- */
         .main-center-wrapper {
             display: flex;
             flex-direction: column;
-            /* --- CHANGE: Align children (h2, comment-group) to the start (left) --- */
-            align-items: flex-start;
-            width: 100%; /* Take full width of parent block */
-            /* Max width constraint is now on parent (.main-content-centered-block) */
+            align-items: flex-start; /* Keep content left-aligned */
+            width: 100%; /* Take full width of parent */
+            /* --- CHANGE: Apply max-width here (from old centered block) --- */
+            max-width: 530px;
             gap: 15px; /* Space between heading and comment group */
-            /* Remove margins, spacing handled by parent's gap */
-            margin-bottom: 0;
+            /* --- CHANGE: Add margin below to create space above rating buttons (~10% height) --- */
+            margin-bottom: 10vh; /* Adjust this value (e.g., 8vh to 12vh) */
             flex-shrink: 0; /* Prevent shrinking */
         }
 
@@ -127,8 +122,7 @@
         .main-center-wrapper h2 {
             color: #333;
             font-size: 1.6em;
-            /* --- CHANGE: Align text left --- */
-            text-align: left;
+            text-align: left; /* Keep text left-aligned */
             width: 100%;
             margin-bottom: 0; /* Use gap in parent */
         }
@@ -166,7 +160,6 @@
         #record-comment-button.is-recording .mic-icon.recording { display: inline; }
         #record-comment-button.is-transcribing { background-color: #ddeeff; box-shadow: 0 0 8px rgba(100, 150, 255, 0.5); cursor: not-allowed; animation: none; }
 
-        /* --- CHANGE: Styling for Clear/Weiter button --- */
         .clear-button {
           display: block; /* Will be toggled by JS */
           width: 100%;
@@ -200,18 +193,21 @@
             min-height: 1.2em; text-align: center; padding-left: 0; display: block;
         }
 
-        /* --- Rating Circles Container (inside centered block) --- */
+        /* --- Rating Circles Container (Now direct child of main-content) --- */
         .feedback-options {
             display: flex;
-            justify-content: center;
+            justify-content: center; /* Keep buttons centered horizontally */
             align-items: center;
-            gap: 35px;
-            width: 100%; /* Take full width of parent block */
-            flex-wrap: wrap;
-            /* Remove margins, spacing handled by parent's gap */
-            margin-top: 0;
+            /* --- CHANGE: Arrange buttons in a row (default for flex) --- */
+            flex-direction: row;
+            gap: 35px; /* Keep gap between buttons */
+            width: 100%; /* Allow it to take width */
+            /* --- CHANGE: Apply max-width for better control on wide screens --- */
+            max-width: 600px; /* Adjust as needed: (160px * 3) + (35px * 2) = 550px. 600px gives some buffer */
+            flex-wrap: wrap; /* Allow wrapping if space is extremely tight */
+            margin-top: 0; /* Remove margin, spacing handled by parent gap/padding */
+            padding-bottom: 0; /* Remove padding */
             flex-shrink: 0; /* Prevent shrinking */
-            padding-bottom: 0;
         }
         .feedback-button {
             border: none; border-radius: 50%; width: 160px; height: 160px; cursor: pointer;
@@ -219,6 +215,8 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
             padding: 15px; box-shadow: 0 5px 12px rgba(0,0,0,0.2); color: white; font-weight: bold;
             font-size: 1.1em; line-height: 1.3;
+            /* Add flex-shrink: 0 to prevent buttons shrinking if container is too narrow */
+            flex-shrink: 0;
         }
         .feedback-button span { display: block; }
         .feedback-button:hover:not(:disabled) { transform: scale(1.06); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
@@ -242,11 +240,11 @@
             width: 100px; text-align: center;
         }
 
-        /* --- Loading Indicator (inside centered block) --- */
+        /* --- Loading Indicator (Now direct child of main-content) --- */
         #loading-indicator {
             font-size: 1.1em; color: #555;
-            /* Remove margins, spacing handled by parent's gap */
-            margin-top: 0;
+            /* Positioned naturally by the flex container */
+            margin-top: 15px; /* Add some space if it appears */
             flex-shrink: 0;
         }
 
@@ -271,53 +269,48 @@
         /* --- Responsive Adjustments --- */
         @media (max-width: 768px) {
             #app-container { width: 95vw; height: 90vh; max-height: none; flex-direction: column; }
-            #feedback-section { flex-direction: column; }
+            #feedback-section { flex-direction: column; } /* Already column, but ensure it stays */
 
             .feedback-sidebar {
-                order: 3; /* Move sidebar to bottom */
+                order: 5; /* --- CHANGE: Ensure sidebar is last in the column flow */
                 width: 100%; flex-direction: row; justify-content: center; flex-wrap: wrap;
                 padding: 15px 10px; border-right: none; border-top: 1px solid #e0e0e0; gap: 10px; overflow-y: visible;
+                 flex-shrink: 0; /* Prevent shrinking */
             }
             .feedback-sidebar .group-button { width: auto; max-width: 80px; }
 
             .feedback-main-content {
-                order: 1; /* Keep main content area at top */
+                order: 1; /* Keep main content area at top within app container */
                 flex: 1; /* Allow it to grow */
-                padding: 15px;
-                /* --- CHANGE: Override vertical centering for mobile, align top --- */
+                padding: 15px; /* Restore padding */
+                /* --- CHANGE: Override desktop vertical alignment, align top --- */
                 justify-content: flex-start;
+                /* --- CHANGE: Add gap between elements in mobile view --- */
+                gap: 15px;
                 overflow-y: auto;
                 position: static; /* Reset position */
                 width: 100%;
-                /* Add bottom padding to prevent cutting off last element */
-                padding-bottom: 20px;
+                /* Remove vh padding */
+                padding-bottom: 20px; /* Add standard padding */
             }
 
-            /* --- NEW: Adjust centered block for mobile --- */
-            .main-content-centered-block {
-                 order: 2; /* Place below corner buttons */
-                 gap: 15px; /* Adjust gap */
-                 max-width: 100%; /* Allow full width */
-                 /* No margin needed, handled by parent padding/order */
-            }
-
-             #top-right-buttons {
+            #top-right-buttons {
                 order: 1; /* Place corner buttons at the very top */
                 position: static; /* Reset position */
                 flex-direction: row; justify-content: flex-end;
-                width: 100%; margin-bottom: 10px; /* Space below buttons */
+                width: 100%; margin-bottom: 0; /* Use parent gap */
                 gap: 10px; padding: 0 10px; /* Adjust padding */
             }
             .corner-group-button { width: auto; padding: 6px 12px; font-size: 0.8em; border-radius: 10px; }
 
-            /* --- Adjust wrapper inside block for mobile --- */
+
+             /* --- Adjust wrapper inside block for mobile --- */
             .main-center-wrapper {
-                /* order: 2; -- Order handled by parent block */
-                /* margin: 0; -- Handled by parent block */
-                /* margin-top: 10px; -- Handled by parent block */
-                /* margin-bottom: 15px; -- Handled by parent block's gap */
+                order: 2; /* Follows top buttons */
+                /* --- CHANGE: Override desktop margin/max-width --- */
+                margin-bottom: 0; /* Use parent gap */
+                max-width: 100%; /* Allow full width */
                 gap: 10px; /* Adjust gap */
-                /* max-width: 100%; -- Handled by parent block */
                 align-items: flex-start; /* Keep left alignment */
             }
 
@@ -326,37 +319,42 @@
                 margin-top: 0;
                 text-align: left; /* Keep left alignment */
             }
-            .comment-group { max-width: 100%; margin-top: 5px; }
+            .comment-group { max-width: 100%; margin-top: 0; gap: 5px;} /* Use parent gap */
             .comment-input-row { gap: 5px; }
             #comment { height: 50px; min-height: 50px; }
             #record-comment-button { width: 35px; height: 35px; font-size: 1.2em; margin-top: 3px; }
             .clear-button { font-size: 0.85em; padding: 6px 12px; }
 
             .feedback-options {
-                /* order: 3; -- Order handled by parent block */
+                order: 3; /* Follows comment wrapper */
                 gap: 15px;
-                /* margin-top: 20px; -- Handled by parent block's gap */
+                /* --- CHANGE: Override desktop margin/max-width --- */
+                margin-top: 0; /* Use parent gap */
                 padding-bottom: 0;
                 width: 100%; /* Ensure it takes full width on mobile */
+                max-width: 100%; /* Override desktop max-width */
+                justify-content: center; /* Keep centered */
             }
             .feedback-button { width: 100px; height: 100px; font-size: 0.9em; }
 
             #thank-you-text { font-size: 4em; }
+
             #loading-indicator {
-                /* order: 4; -- Order handled by parent block */
+                order: 4; /* Follows rating buttons */
                 position: static;
-                margin-top: 0; /* Handled by parent block's gap */
+                margin-top: 0; /* Use parent gap */
             }
             .error-message { max-width: 100%; padding-left: 0; text-align: center;}
         }
+
         @media (max-width: 480px) {
             .feedback-button { width: 80px; height: 80px; font-size: 0.8em; }
             .feedback-sidebar .group-button { max-width: 60px; }
             .corner-group-button { padding: 5px 10px; font-size: 0.75em; }
-             /* --- Adjust centered block for mobile --- */
-            .main-content-centered-block {
-                 gap: 10px; /* Adjust gap */
-            }
+            /* Adjust gaps for smaller mobile */
+             .feedback-main-content {
+                 gap: 10px;
+             }
             .main-center-wrapper h2 { font-size: 1.2em; }
             .comment-group { margin-top: 0; }
             #comment { height: 45px; min-height: 45px; }
